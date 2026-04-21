@@ -6,15 +6,15 @@ plugins {
 }
 
 android {
-    namespace "com.inuafund.inuafund"
-    compileSdkVersion 34
+    namespace = "com.inuafund.inuafund"
+    compileSdk = 34
 
     defaultConfig {
-        applicationId "com.inuafund.inuafund"
-        minSdkVersion 21        // covers ~99% of Android devices in Kenya
-        targetSdkVersion 34
-        versionCode 1
-        versionName "1.0.0"
+        applicationId = "com.inuafund.inuafund"
+        minSdk = flutter.minSdkVersion
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0"
     }
 }
 
