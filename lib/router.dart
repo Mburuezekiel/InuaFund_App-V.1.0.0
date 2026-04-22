@@ -6,6 +6,7 @@ import 'features/home/screens/home_screen.dart';
 
 import 'features//campaign/screens/create_campaign.dart';
 
+
 final appRouter = GoRouter(
   initialLocation: '/onboarding',
   routes: [
@@ -25,7 +26,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
 
     //campaign routes
-    GoRoute(path: '/start-campaign', builder: (_, __) => const CreateCampaignScreen()),
+    GoRoute(path: '/start-campaign', builder: (_, __) => const StartCampaignScreen()),
     
   ],
 );

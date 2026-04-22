@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as p;
 import 'core/theme/app_theme.dart';
+import 'core/network/auth_service.dart';
 import 'router.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: InuaFundApp()));
+  runApp(
+    ProviderScope(
+      child: p.MultiProvider(
+        providers: [
+          p.ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ],
+        child: const InuaFundApp(),
+      ),
+    ),
+  );
 }
 
 class InuaFundApp extends StatelessWidget {

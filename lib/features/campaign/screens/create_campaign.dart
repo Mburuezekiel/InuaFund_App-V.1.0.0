@@ -1,30 +1,13 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME — same palette as HomeScreen
-// ═══════════════════════════════════════════════════════════════════════════════
 
-class AppColors {
-  static const forestGreen = Color(0xFF0B5E35);
-  static const midGreen    = Color(0xFF1A8C52);
-  static const limeGreen   = Color(0xFF4CC97A);
-  static const savanna     = Color(0xFFE8A020);
-  static const crimson     = Color(0xFFD93025);
-  static const amber       = Color(0xFFE8860A);
-  static const ink         = Color(0xFF0D0D0D);
-  static const cloud       = Color(0xFFEEEEEE);
-  static const snow        = Color(0xFFF7F7F7);
-  static const white       = Color(0xFFFFFFFF);
-  static const darkBg      = Color(0xFF060E09);
-  static const darkCard    = Color(0xFF0D1A11);
-  static const darkBorder  = Color(0xFF1C2E22);
-  static const mist        = Color(0xFF8FA896);
-}
+ import '../../home/screens/home_screen.dart' show AppColors;
+// ─────────────────────────────────────────────────────────────────────────────
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MODELS
@@ -242,7 +225,7 @@ const kStepMeta = <CampaignStep, Map<String, dynamic>>{
 // MAIN SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class CreateCampaignScreen extends StatefulWidget {
+class StartCampaignScreen extends StatefulWidget {
   final bool isDark;
   final String authToken;
   final String userId;
@@ -250,7 +233,7 @@ class CreateCampaignScreen extends StatefulWidget {
   final String userEmail;
   final String userPhone;
 
-  const CreateCampaignScreen({
+  const StartCampaignScreen({
     super.key,
     this.isDark = false,
     this.authToken = '',
@@ -261,10 +244,10 @@ class CreateCampaignScreen extends StatefulWidget {
   });
 
   @override
-  State<CreateCampaignScreen> createState() => _CreateCampaignScreenState();
+  State<StartCampaignScreen> createState() => _StartCampaignScreenState();
 }
 
-class _CreateCampaignScreenState extends State<CreateCampaignScreen>
+class _StartCampaignScreenState extends State<StartCampaignScreen>
     with TickerProviderStateMixin {
   // ── State ─────────────────────────────────────────────────────────────────
   int _stepIndex = 0;
@@ -1055,7 +1038,7 @@ enum SubmitStatus { idle, loading, success, error }
 
 class _SubmissionDialog extends StatefulWidget {
   final ValueNotifier<SubmitStatus> statusNotifier;
-  final _CreateCampaignScreenState parent;
+  final _StartCampaignScreenState parent;
   final VoidCallback onClose;
   const _SubmissionDialog({required this.statusNotifier, required this.parent, required this.onClose});
   @override State<_SubmissionDialog> createState() => _SubmissionDialogState();
@@ -1628,25 +1611,10 @@ class _GradientBtnState extends State<_GradientBtn> with SingleTickerProviderSta
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// UPDATED HOME SCREEN NAV — navigate to CreateCampaignScreen on FAB tap
+// UPDATED HOME SCREEN NAV — navigate to StartCampaignScreen on FAB tap
 // (Drop-in replacement for the _HomeScreenState's _buildNav)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Call this from HomeScreen's FAB GestureDetector.onTap:
-/// Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateCampaignScreen()));
-
-/// Example updated _buildNav snippet:
-// GestureDetector(
-//   onTap: () => Navigator.push(context, _fadeRoute(const CreateCampaignScreen(isDark: _isDark, authToken: '...', userId: '...', username: '...', userEmail: '...', userPhone: '...'))),
-//   child: Container(/* existing FAB styles */),
-// ),
-
-PageRoute<T> buildCampaignRoute<T>(Widget screen) => PageRouteBuilder(
-  pageBuilder: (_, animation, __) => screen,
-  transitionDuration: const Duration(milliseconds: 380),
-  transitionsBuilder: (_, animation, __, child) {
-    final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-    return SlideTransition(position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
-      child: FadeTransition(opacity: curved, child: child));
-  },
-);
+// Page transition is defined in home_screen.dart as _campaignRoute().
+// StartCampaignScreen is launched by HomeScreen._openCreateCampaign()
+// which reads auth token + user from AuthProvider automatically.

@@ -1,7 +1,17 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// home_screen.dart
+// Full HomeScreen — nav items wired, FAB navigates to StartCampaignScreen,
+// auth token/user passed from AuthProvider
+// ═══════════════════════════════════════════════════════════════════════════════
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+
+import '../../../../core/network/auth_service.dart';
+import '../../campaign/screens/create_campaign.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // THEME
@@ -47,7 +57,6 @@ extension CampaignTierExt on CampaignTier {
       case CampaignTier.none:   return [];
     }
   }
-
   Color get glowColor {
     switch (this) {
       case CampaignTier.gold:   return const Color(0xAAFFA500);
@@ -56,7 +65,6 @@ extension CampaignTierExt on CampaignTier {
       case CampaignTier.none:   return Colors.transparent;
     }
   }
-
   static CampaignTier fromMomentum(double score) {
     if (score >= 8.0) return CampaignTier.gold;
     if (score >= 6.0) return CampaignTier.silver;
@@ -79,47 +87,34 @@ class TierMedalBadge extends StatelessWidget {
     if (tier == CampaignTier.none) return const SizedBox.shrink();
     final colors = tier.colors;
     final glow   = tier.glowColor;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: size, height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-            boxShadow: [BoxShadow(color: glow, blurRadius: 10, spreadRadius: 1, offset: const Offset(0, 3))],
-          ),
-          child: Center(
-            child: CustomPaint(size: Size(size * 0.54, size * 0.40), painter: _CrownPainter()),
-          ),
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: size, height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+          boxShadow: [BoxShadow(color: glow, blurRadius: 10, spreadRadius: 1, offset: const Offset(0, 3))],
         ),
-        Transform.translate(
-          offset: const Offset(0, -2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _Strip(w: size * 0.26, h: size * 0.42, color: colors[0]),
-              const SizedBox(width: 2),
-              _Strip(w: size * 0.26, h: size * 0.42, color: colors[1]),
-            ],
-          ),
-        ),
-      ],
-    );
+        child: Center(child: CustomPaint(size: Size(size * 0.54, size * 0.40), painter: _CrownPainter())),
+      ),
+      Transform.translate(
+        offset: const Offset(0, -2),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          _Strip(w: size * 0.26, h: size * 0.42, color: colors[0]),
+          const SizedBox(width: 2),
+          _Strip(w: size * 0.26, h: size * 0.42, color: colors[1]),
+        ]),
+      ),
+    ]);
   }
 }
 
 class _Strip extends StatelessWidget {
-  final double w, h;
-  final Color color;
+  final double w, h; final Color color;
   const _Strip({required this.w, required this.h, required this.color});
   @override
   Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.only(
-      bottomLeft: Radius.circular(w * 0.45),
-      bottomRight: Radius.circular(w * 0.45),
-    ),
+    borderRadius: BorderRadius.only(bottomLeft: Radius.circular(w * 0.45), bottomRight: Radius.circular(w * 0.45)),
     child: Container(width: w, height: h, color: color),
   );
 }
@@ -128,8 +123,7 @@ class _CrownPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.white.withOpacity(0.93)..style = PaintingStyle.fill;
-    final w = size.width;
-    final h = size.height;
+    final w = size.width; final h = size.height;
     final path = Path()
       ..moveTo(0, h)..lineTo(w, h)
       ..lineTo(w, h * 0.52)..lineTo(w * 0.78, 0)
@@ -138,9 +132,8 @@ class _CrownPainter extends CustomPainter {
       ..lineTo(0, h * 0.52)..close();
     canvas.drawPath(path, paint);
     final gem = Paint()..color = Colors.white.withOpacity(0.45)..style = PaintingStyle.fill;
-    final r = w * 0.07;
     for (final dx in [w * 0.22, w * 0.50, w * 0.78]) {
-      canvas.drawCircle(Offset(dx, r * 0.9), r, gem);
+      canvas.drawCircle(Offset(dx, w * 0.07 * 0.9), w * 0.07, gem);
     }
   }
   @override bool shouldRepaint(covariant CustomPainter old) => false;
@@ -172,7 +165,7 @@ class Campaign {
       if (v == null) return 0;
       if (v is num) return v.toDouble();
       if (v is Map) {
-        if (v['\$numberInt'] != null) return double.parse(v['\$numberInt'].toString());
+        if (v['\$numberInt']    != null) return double.parse(v['\$numberInt'].toString());
         if (v['\$numberDouble'] != null) return double.parse(v['\$numberDouble'].toString());
       }
       return double.tryParse(v.toString()) ?? 0;
@@ -238,7 +231,7 @@ class Campaign {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SERVICE
+// CAMPAIGN SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class CampaignService {
@@ -291,32 +284,27 @@ class CampaignService {
   }
 
   static List<Campaign> _mock() => [
-    const Campaign(
-      id: '1', title: 'Help Mama Wanjiku with Cancer Treatment',
+    const Campaign(id: '1', title: 'Help Mama Wanjiku with Cancer Treatment',
       description: 'Mama Wanjiku needs urgent support for chemotherapy at KNH.',
       category: 'medical', amountRaised: 145000, goal: 300000,
       completionPercentage: 48.3, daysRemaining: 14, donorCount: 89,
       urgencyLevel: 'high', momentumScore: 9.1, creatorName: 'James Kamau'),
-    const Campaign(
-      id: '2', title: 'Flood Relief — Tana River Families',
+    const Campaign(id: '2', title: 'Flood Relief — Tana River Families',
       description: 'Emergency relief for 500+ families displaced by floods.',
       category: 'emergencies', amountRaised: 312000, goal: 400000,
       completionPercentage: 78.0, daysRemaining: 7, donorCount: 423,
       urgencyLevel: 'high', momentumScore: 8.5, creatorName: 'Red Cross Kenya'),
-    const Campaign(
-      id: '3', title: 'Kibera School Desks & Books Drive',
+    const Campaign(id: '3', title: 'Kibera School Desks & Books Drive',
       description: 'Quality desks and learning materials for 200 students.',
       category: 'education', amountRaised: 67500, goal: 120000,
       completionPercentage: 56.3, daysRemaining: 30, donorCount: 156,
       urgencyLevel: 'low', momentumScore: 6.2, creatorName: 'Faith Otieno'),
-    const Campaign(
-      id: '4', title: 'Borehole for Turkana Community',
+    const Campaign(id: '4', title: 'Borehole for Turkana Community',
       description: 'Clean water access for 3,000 people via solar borehole.',
       category: 'water', amountRaised: 230000, goal: 450000,
       completionPercentage: 51.1, daysRemaining: 45, donorCount: 201,
       urgencyLevel: 'medium', momentumScore: 5.0, creatorName: 'WaterAid Kenya'),
-    const Campaign(
-      id: '5', title: 'Bursary for 12 Students — Kisumu',
+    const Campaign(id: '5', title: 'Bursary for 12 Students — Kisumu',
       description: 'Scholarship fund for bright students in Kisumu.',
       category: 'education', amountRaised: 88000, goal: 150000,
       completionPercentage: 58.7, daysRemaining: 12, donorCount: 67,
@@ -325,7 +313,7 @@ class CampaignService {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ANIMATED DONATE BUTTON (inside card)
+// ANIMATED DONATE BUTTON
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _AnimatedDonateButton extends StatefulWidget {
@@ -342,11 +330,9 @@ class _AnimatedDonateButtonState extends State<_AnimatedDonateButton>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 160));
-    _scale = Tween(begin: 1.0, end: 0.93)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _ctrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 160));
+    _scale = Tween(begin: 1.0, end: 0.93).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
-
   @override void dispose() { _ctrl.dispose(); super.dispose(); }
 
   Future<void> _tap() async {
@@ -362,20 +348,16 @@ class _AnimatedDonateButtonState extends State<_AnimatedDonateButton>
     child: GestureDetector(
       onTap: _tap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 280), curve: Curves.easeInOut,
         height: 46,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: _done
-                ? [const Color(0xFF1A8C52), const Color(0xFF4CC97A)]
-                : [AppColors.forestGreen, AppColors.limeGreen],
+            colors: _done ? [const Color(0xFF1A8C52), const Color(0xFF4CC97A)]
+                          : [AppColors.forestGreen, AppColors.limeGreen],
             begin: Alignment.centerLeft, end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(13),
-          boxShadow: [BoxShadow(
-            color: AppColors.midGreen.withOpacity(_done ? 0.22 : 0.38),
-            blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(_done ? 0.22 : 0.38), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           AnimatedSwitcher(
@@ -388,11 +370,9 @@ class _AnimatedDonateButtonState extends State<_AnimatedDonateButton>
           const SizedBox(width: 8),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),
-            child: Text(
-              _done ? 'Donated! 🎉' : 'Donate Now',
+            child: Text(_done ? 'Donated! 🎉' : 'Donate Now',
               key: ValueKey(_done),
-              style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
-            ),
+              style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white)),
           ),
         ]),
       ),
@@ -446,6 +426,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     {'label': 'environment', 'icon': Icons.eco_rounded},
   ];
 
+  // ── Nav route map ──────────────────────────────────────────────────────────
+  // Each nav index maps to a named route or an action.
+  // 0 = Home (stay), 1 = Explore, 2 = FAB/Create, 3 = Alerts, 4 = Profile
+  static const _navRoutes = {
+    1: '/explore',
+    3: '/alerts',
+    4: '/profile',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -478,6 +467,49 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (mounted) setState(() { _searchResults = r; _searching = false; });
   }
 
+  // ── Navigate to StartCampaignScreen — pulls user from AuthProvider ─────────
+  void _openCreateCampaign() {
+    final auth = context.read<AuthProvider>();
+    if (!auth.isAuthenticated) {
+      _showAuthRequired();
+      return;
+    }
+    final user = auth.user!;
+    Navigator.push(
+      context,
+      _campaignRoute(StartCampaignScreen(
+        isDark:     _isDark,
+        authToken:  auth.token,
+        userId:     user.id,
+        username:   user.username,
+        userEmail:  user.email,
+        userPhone:  user.phoneNumber,
+      )),
+    );
+  }
+
+  void _showAuthRequired() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AuthRequiredSheet(surface: surface, border: border, txt1: txt1, txt2: txt2,
+        onLogin: () { Navigator.pop(context); Navigator.pushNamed(context, '/login'); }),
+    );
+  }
+
+  // ── Handle bottom nav taps ─────────────────────────────────────────────────
+  void _onNavTap(int idx) {
+    if (idx == 0) { setState(() => _navIndex = 0); return; } // Home — stay
+    if (_navRoutes.containsKey(idx)) {
+      setState(() => _navIndex = idx);
+      // Push named route — these should be registered in your MaterialApp.routes
+      Navigator.pushNamed(context, _navRoutes[idx]!).then((_) {
+        // Reset nav highlight when we come back
+        setState(() => _navIndex = 0);
+      });
+    }
+  }
+
   @override
   void dispose() { _pageCtrl.dispose(); _listCtrl.dispose(); _searchCtrl.dispose(); super.dispose(); }
 
@@ -485,6 +517,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (v >= 1000000) return 'KES ${(v / 1000000).toStringAsFixed(1)}M';
     if (v >= 1000)    return 'KES ${(v / 1000).toStringAsFixed(0)}K';
     return 'KES ${v.toStringAsFixed(0)}';
+  }
+
+  // ── Greeting based on time of day ──────────────────────────────────────────
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   @override
@@ -504,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ── SEARCH VIEW ──────────────────────────────────────────────────────────────
+  // ── SEARCH VIEW ─────────────────────────────────────────────────────────────
   Widget _buildSearch() => Column(children: [
     Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -521,18 +561,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const SizedBox(width: 14),
               const Icon(Icons.search_rounded, color: AppColors.midGreen, size: 19),
               const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _searchCtrl, autofocus: true,
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt1),
-                  decoration: InputDecoration(
-                    hintText: 'Search campaigns, causes…',
-                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint),
-                    border: InputBorder.none,
-                  ),
-                  onChanged: (v) { setState(() => _searchQuery = v); _doSearch(v); },
+              Expanded(child: TextField(
+                controller: _searchCtrl, autofocus: true,
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt1),
+                decoration: InputDecoration(
+                  hintText: 'Search campaigns, causes…',
+                  hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint),
+                  border: InputBorder.none,
                 ),
-              ),
+                onChanged: (v) { setState(() => _searchQuery = v); _doSearch(v); },
+              )),
               if (_searchQuery.isNotEmpty)
                 GestureDetector(
                   onTap: () { _searchCtrl.clear(); setState(() { _searchQuery = ''; _searchResults = []; }); },
@@ -564,9 +602,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: _searchResults.length,
-                      itemBuilder: (_, i) => _SearchCard(
-                        c: _searchResults[i], surface: surface, border: border,
-                        txt1: txt1, txt2: txt2, kes: _kes)),
+                      itemBuilder: (_, i) => _SearchCard(c: _searchResults[i], surface: surface, border: border, txt1: txt1, txt2: txt2, kes: _kes)),
     ),
   ]);
 
@@ -601,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     Text('Try a different keyword', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
   ]));
 
-  // ── MAIN SCROLL VIEW ─────────────────────────────────────────────────────────
+  // ── MAIN SCROLL VIEW ────────────────────────────────────────────────────────
   Widget _buildMain() => CustomScrollView(
     physics: const BouncingScrollPhysics(),
     slivers: [
@@ -622,11 +658,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         SliverList(delegate: SliverChildBuilderDelegate(
           (_, i) => _StaggerItem(
             index: i, ctrl: _listCtrl,
-            child: _ActiveCampaignCard(
-              c: _campaigns[i], isDark: _isDark,
-              surface: surface, border: border,
-              txt1: txt1, txt2: txt2, txtHint: txtHint, kes: _kes,
-            ),
+            child: _ActiveCampaignCard(c: _campaigns[i], isDark: _isDark,
+              surface: surface, border: border, txt1: txt1, txt2: txt2, txtHint: txtHint, kes: _kes),
           ),
           childCount: _campaigns.length,
         )),
@@ -634,41 +667,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ],
   );
 
-  // ── Top bar — greeting left, search+bell icons right (NO logo/avatar) ────────
-  Widget _topBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Good evening',
-            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2, fontWeight: FontWeight.w400)),
+  // ── Top bar — reads user name from AuthProvider ─────────────────────────────
+  Widget _topBar() {
+    final auth = context.watch<AuthProvider>();
+    final displayName = auth.user?.username ?? auth.user?.fullName ?? 'there';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_greeting, style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2, fontWeight: FontWeight.w400)),
           const SizedBox(height: 2),
-          Text('Karibu, Eric 👋',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 26, color: txt1, letterSpacing: -0.5, height: 1.15)),
+          Text('Karibu, $displayName 👋',
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 24, color: txt1, letterSpacing: -0.5, height: 1.15)),
           const SizedBox(height: 3),
-          Text('What cause will you support today?',
-            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
+          Text('What cause will you support today?', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
+        ])),
+        const SizedBox(width: 12),
+        _RoundedIconBtn(icon: Icons.search_rounded, surface: surface, border: border, iconColor: txt1,
+          onTap: () => setState(() => _searchActive = true)),
+        const SizedBox(width: 8),
+        // Dark mode toggle
+        _RoundedIconBtn(
+          icon: _isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+          surface: surface, border: border, iconColor: txt1,
+          onTap: () => setState(() => _isDark = !_isDark),
+        ),
+        const SizedBox(width: 8),
+        Stack(clipBehavior: Clip.none, children: [
+          _RoundedIconBtn(icon: Icons.notifications_outlined, surface: surface, border: border, iconColor: txt1,
+            onTap: () => _onNavTap(3)),
+          Positioned(top: 8, right: 8,
+            child: Container(width: 9, height: 9,
+              decoration: BoxDecoration(color: AppColors.crimson, shape: BoxShape.circle, border: Border.all(color: surface, width: 1.5)))),
         ]),
-      ),
-      const SizedBox(width: 12),
-      _RoundedIconBtn(icon: Icons.search_rounded, surface: surface, border: border, iconColor: txt1,
-        onTap: () => setState(() => _searchActive = true)),
-      const SizedBox(width: 8),
-      Stack(clipBehavior: Clip.none, children: [
-        _RoundedIconBtn(icon: Icons.notifications_outlined, surface: surface, border: border, iconColor: txt1, onTap: () {}),
-        Positioned(top: 8, right: 8,
-          child: Container(
-            width: 9, height: 9,
-            decoration: BoxDecoration(
-              color: AppColors.crimson, shape: BoxShape.circle,
-              border: Border.all(color: surface, width: 1.5),
-            ),
-          )),
       ]),
-    ]),
-  );
+    );
+  }
 
-  // ── Search bar — grey border, green Filter button ─────────────────────────────
   Widget _searchBar() => Padding(
     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
     child: GestureDetector(
@@ -700,7 +735,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ),
   );
 
-  // ── Stats — 3 separate white cards side by side ───────────────────────────────
   Widget _statsRow() {
     final totalRaised = _campaigns.fold<double>(0, (s, c) => s + c.amountRaised);
     final totalDonors = _campaigns.fold<int>(0, (s, c) => s + c.donorCount);
@@ -747,10 +781,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,
           margin: const EdgeInsets.symmetric(horizontal: 3),
           width: _carouselPage == i ? 24 : 7, height: 7,
-          decoration: BoxDecoration(
-            color: _carouselPage == i ? AppColors.midGreen : border,
-            borderRadius: BorderRadius.circular(4),
-          ),
+          decoration: BoxDecoration(color: _carouselPage == i ? AppColors.midGreen : border, borderRadius: BorderRadius.circular(4)),
         ),
       )),
     ],
@@ -761,12 +792,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     itemCount: 2,
     itemBuilder: (_, __) => _ShimmerBox(w: 300, h: 310, r: 22, surface: surface));
 
-  // ── Category chips — dot for active, icon for rest ────────────────────────────
   Widget _categoryChips() => SizedBox(
     height: 40,
     child: ListView.builder(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: _categories.length,
       itemBuilder: (_, i) {
         final cat = _categories[i];
@@ -807,14 +836,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       const SizedBox(width: 10),
       Text('Active campaigns', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: txt1, letterSpacing: -0.2)),
       const Spacer(),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppColors.midGreen.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.midGreen.withOpacity(0.2)),
+      GestureDetector(
+        onTap: () => _onNavTap(1), // goes to Explore
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: AppColors.midGreen.withOpacity(0.08), borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.midGreen.withOpacity(0.2)),
+          ),
+          child: const Text('See all', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.midGreen)),
         ),
-        child: const Text('See all', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.midGreen)),
       ),
     ]),
   );
@@ -830,6 +861,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ]),
   );
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BOTTOM NAV — fully wired
+  // 0 Home · 1 Explore · FAB Create · 3 Alerts · 4 Profile
+  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildNav() => AnimatedContainer(
     duration: const Duration(milliseconds: 300),
     decoration: BoxDecoration(
@@ -841,22 +876,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: SizedBox(
         height: 64,
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          _NavItem(icon: Icons.home_rounded,           label: 'Home',    idx: 0, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
-          _NavItem(icon: Icons.explore_rounded,         label: 'Explore',  idx: 1, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
+          // 0 — Home
+          _NavItem(icon: Icons.home_rounded, label: 'Home', idx: 0,
+            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
+
+          // 1 — Explore
+          _NavItem(icon: Icons.explore_rounded, label: 'Explore', idx: 1,
+            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
+
+          // FAB — Create Campaign (idx 2, wired to StartCampaignScreen)
           GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 54, height: 54,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 5))],
+            onTap: _openCreateCampaign,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.9, end: 1.0),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.elasticOut,
+              builder: (_, v, child) => Transform.scale(scale: v, child: child),
+              child: Container(
+                width: 54, height: 54,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [AppColors.forestGreen, AppColors.limeGreen],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 5))],
+                ),
+                child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
               ),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
             ),
           ),
-          _NavItem(icon: Icons.notifications_outlined, label: 'Alerts',  idx: 3, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
-          _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
+
+          // 3 — Alerts
+          _NavItem(icon: Icons.notifications_outlined, label: 'Alerts', idx: 3,
+            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
+
+          // 4 — Profile
+          _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4,
+            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
         ]),
       ),
     ),
@@ -864,8 +920,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// AUTH REQUIRED BOTTOM SHEET
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _AuthRequiredSheet extends StatelessWidget {
+  final Color surface, border, txt1, txt2;
+  final VoidCallback onLogin;
+  const _AuthRequiredSheet({required this.surface, required this.border, required this.txt1, required this.txt2, required this.onLogin});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(28),
+    decoration: BoxDecoration(
+      color: surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 40, height: 4, decoration: BoxDecoration(color: border, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(height: 24),
+      Container(width: 72, height: 72, decoration: BoxDecoration(shape: BoxShape.circle,
+        gradient: LinearGradient(colors: [AppColors.forestGreen.withOpacity(0.15), AppColors.limeGreen.withOpacity(0.15)])),
+        child: const Icon(Icons.lock_outline_rounded, color: AppColors.midGreen, size: 36)),
+      const SizedBox(height: 20),
+      Text('Sign in to Create', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 20, color: txt1)),
+      const SizedBox(height: 8),
+      Text('You need an account to start a campaign.\nIt only takes a minute!',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: txt2, height: 1.5)),
+      const SizedBox(height: 28),
+      GestureDetector(
+        onTap: onLogin,
+        child: Container(
+          height: 52, width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen]),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 5))],
+          ),
+          child: const Center(child: Text('Sign In / Register', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white))),
+        ),
+      ),
+      const SizedBox(height: 12),
+      GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: Container(height: 50, width: double.infinity, alignment: Alignment.center,
+          child: Text('Not now', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 14, color: txt2))),
+      ),
+    ]),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // FEATURED CARD
-// Two-part: gradient image area TOP + white info section BOTTOM
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _FeaturedCard extends StatelessWidget {
@@ -880,81 +986,51 @@ class _FeaturedCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 7),
       decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(22),
+        color: surface, borderRadius: BorderRadius.circular(22),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 20, offset: const Offset(0, 6))],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(children: [
-        // ── Gradient/image top ────────────────────────────────────────────────
-        SizedBox(
-          height: 170,
-          child: Stack(children: [
-            Positioned.fill(
-              child: c.featuredImage != null
-                  ? Image.network(c.featuredImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradBg())
-                  : _gradBg(),
-            ),
-            Positioned.fill(child: Container(
-              decoration: BoxDecoration(gradient: LinearGradient(
-                colors: [Colors.transparent, Colors.black.withOpacity(0.22)],
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              )),
-            )),
-            // Badge pills top-left
-            Positioned(top: 14, left: 14, child: Row(children: [
-              if (c.urgencyLevel == 'high') ...[
-                _BadgePill(label: 'URGENT', bg: AppColors.crimson),
-                const SizedBox(width: 6),
-              ],
-              _BadgePill(label: c.category.toUpperCase(), bg: AppColors.midGreen),
-            ])),
-            // Crown medal top-right
-            if (c.tier != CampaignTier.none)
-              Positioned(top: 10, right: 14, child: TierMedalBadge(tier: c.tier, size: 36)),
-            // Placeholder if no image
-            if (c.featuredImage == null)
-              const Center(child: Icon(Icons.add_photo_alternate_rounded, color: Colors.white38, size: 48)),
-          ]),
-        ),
-        // ── White info bottom ─────────────────────────────────────────────────
+        SizedBox(height: 170, child: Stack(children: [
+          Positioned.fill(child: c.featuredImage != null
+              ? Image.network(c.featuredImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradBg())
+              : _gradBg()),
+          Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(
+            colors: [Colors.transparent, Colors.black.withOpacity(0.22)],
+            begin: Alignment.topCenter, end: Alignment.bottomCenter)))),
+          Positioned(top: 14, left: 14, child: Row(children: [
+            if (c.urgencyLevel == 'high') ...[_BadgePill(label: 'URGENT', bg: AppColors.crimson), const SizedBox(width: 6)],
+            _BadgePill(label: c.category.toUpperCase(), bg: AppColors.midGreen),
+          ])),
+          if (c.tier != CampaignTier.none)
+            Positioned(top: 10, right: 14, child: TierMedalBadge(tier: c.tier, size: 36)),
+        ])),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (c.creatorName != null)
-              Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+            if (c.creatorName != null) Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
             const SizedBox(height: 4),
-            Text(c.title,
-              maxLines: 2, overflow: TextOverflow.ellipsis,
+            Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
               style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 16, color: txt1, height: 1.3)),
             const SizedBox(height: 12),
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 900),
-              curve: Curves.easeOutCubic,
-              builder: (_, val, __) => ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: val, minHeight: 8, backgroundColor: border,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.midGreen),
-                ),
-              ),
-            ),
+              duration: const Duration(milliseconds: 900), curve: Curves.easeOutCubic,
+              builder: (_, val, __) => ClipRRect(borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(value: val, minHeight: 8, backgroundColor: border,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.midGreen)))),
             const SizedBox(height: 10),
             Row(children: [
               RichText(text: TextSpan(children: [
-                TextSpan(text: kes(c.amountRaised),
-                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.midGreen)),
-                TextSpan(text: ' / ${kes(c.goal)}',
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+                TextSpan(text: kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.midGreen)),
+                TextSpan(text: ' / ${kes(c.goal)}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
               ])),
               const Spacer(),
               Text('${c.completionPercentage.toStringAsFixed(0)}%',
                 style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.savanna)),
             ]),
             const SizedBox(height: 6),
-            Text('${c.donorCount} donors · ${c.daysRemaining} days left',
-              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+            Text('${c.donorCount} donors · ${c.daysRemaining} days left', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
             const SizedBox(height: 14),
             const SizedBox(width: double.infinity, child: _AnimatedDonateButton()),
           ]),
@@ -962,14 +1038,11 @@ class _FeaturedCard extends StatelessWidget {
       ]),
     );
   }
-
-  Widget _gradBg() => Container(
-    decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight)));
+  Widget _gradBg() => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight)));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ACTIVE CAMPAIGN CARD
-// Horizontal: left thumbnail + right info, progress + donate button inside
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _ActiveCampaignCard extends StatelessWidget {
@@ -983,14 +1056,12 @@ class _ActiveCampaignCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = (c.completionPercentage / 100).clamp(0.0, 1.0);
-    final urgent = c.daysRemaining <= 7;
+    final urgent   = c.daysRemaining <= 7;
     final barColor = urgent ? c.urgencyColor : AppColors.midGreen;
-
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
       decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(18),
+        color: surface, borderRadius: BorderRadius.circular(18),
         border: Border.all(color: urgent ? c.urgencyColor.withOpacity(0.30) : border, width: 1),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.22 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
       ),
@@ -998,14 +1069,11 @@ class _ActiveCampaignCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(14),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Thumbnail + medal badge
             Stack(clipBehavior: Clip.none, children: [
               Container(
                 width: 80, height: 80,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight)),
                 child: c.featuredImage != null
                     ? ClipRRect(borderRadius: BorderRadius.circular(14),
                         child: Image.network(c.featuredImage!, fit: BoxFit.cover,
@@ -1013,42 +1081,33 @@ class _ActiveCampaignCard extends StatelessWidget {
                     : _thumbIcon(),
               ),
               if (c.tier != CampaignTier.none)
-                Positioned(bottom: -6, left: -4,
-                  child: TierMedalBadge(tier: c.tier, size: 24)),
+                Positioned(bottom: -6, left: -4, child: TierMedalBadge(tier: c.tier, size: 24)),
             ]),
             const SizedBox(width: 14),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                // Category + urgency pills
-                Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(color: c.categoryGradient[0].withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+                  child: Text(c.category.toUpperCase(),
+                    style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: c.categoryGradient[0])),
+                ),
+                if (urgent) ...[
+                  const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: c.categoryGradient[0].withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(c.category.toUpperCase(),
-                      style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: c.categoryGradient[0])),
+                    decoration: BoxDecoration(color: AppColors.crimson.withOpacity(0.10), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('EMERGENCY', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: AppColors.crimson)),
                   ),
-                  if (urgent) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                      decoration: BoxDecoration(color: AppColors.crimson.withOpacity(0.10), borderRadius: BorderRadius.circular(20)),
-                      child: const Text('EMERGENCY',
-                        style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: AppColors.crimson)),
-                    ),
-                  ],
-                ]),
-                const SizedBox(height: 6),
-                Text(c.title,
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: txt1, height: 1.3)),
-                const SizedBox(height: 4),
-                if (c.creatorName != null)
-                  Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+                ],
               ]),
-            ),
+              const SizedBox(height: 6),
+              Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: txt1, height: 1.3)),
+              const SizedBox(height: 4),
+              if (c.creatorName != null)
+                Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+            ])),
           ]),
         ),
         Padding(
@@ -1056,23 +1115,15 @@ class _ActiveCampaignCard extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 950),
-              curve: Curves.easeOutCubic,
-              builder: (_, val, __) => ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: val, minHeight: 7, backgroundColor: border,
-                  valueColor: AlwaysStoppedAnimation(barColor),
-                ),
-              ),
-            ),
+              duration: const Duration(milliseconds: 950), curve: Curves.easeOutCubic,
+              builder: (_, val, __) => ClipRRect(borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(value: val, minHeight: 7, backgroundColor: border,
+                  valueColor: AlwaysStoppedAnimation(barColor)))),
             const SizedBox(height: 10),
             Row(children: [
               RichText(text: TextSpan(children: [
-                TextSpan(text: kes(c.amountRaised),
-                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.midGreen)),
-                TextSpan(text: ' / ${kes(c.goal)}',
-                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+                TextSpan(text: kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.midGreen)),
+                TextSpan(text: ' / ${kes(c.goal)}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
               ])),
               const Spacer(),
               Container(
@@ -1097,7 +1148,6 @@ class _ActiveCampaignCard extends StatelessWidget {
       ]),
     );
   }
-
   Widget _thumbIcon() => Center(child: Icon(c.categoryIcon, color: Colors.white.withOpacity(0.85), size: 32));
 }
 
@@ -1119,11 +1169,9 @@ class _SearchCard extends StatelessWidget {
     decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: border)),
     child: Row(children: [
       Stack(clipBehavior: Clip.none, children: [
-        Container(
-          width: 50, height: 50,
+        Container(width: 50, height: 50,
           decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient), borderRadius: BorderRadius.circular(12)),
-          child: Center(child: Icon(c.categoryIcon, color: Colors.white, size: 24)),
-        ),
+          child: Center(child: Icon(c.categoryIcon, color: Colors.white, size: 24))),
         if (c.tier != CampaignTier.none)
           Positioned(bottom: -5, right: -5, child: TierMedalBadge(tier: c.tier, size: 20)),
       ]),
@@ -1141,7 +1189,7 @@ class _SearchCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// STAGGER ANIMATION WRAPPER
+// STAGGER ANIMATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _StaggerItem extends StatelessWidget {
@@ -1157,10 +1205,8 @@ class _StaggerItem extends StatelessWidget {
     final anim  = CurvedAnimation(parent: ctrl, curve: Interval(start, end, curve: Curves.easeOutCubic));
     return AnimatedBuilder(
       animation: anim,
-      builder: (_, __) => Opacity(
-        opacity: anim.value,
-        child: Transform.translate(offset: Offset(0, 20 * (1 - anim.value)), child: child),
-      ),
+      builder: (_, __) => Opacity(opacity: anim.value,
+        child: Transform.translate(offset: Offset(0, 20 * (1 - anim.value)), child: child)),
     );
   }
 }
@@ -1186,16 +1232,13 @@ class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderS
       margin: const EdgeInsets.fromLTRB(20, 0, 20, 14), height: 120,
       decoration: BoxDecoration(
         color: widget.surface.withOpacity(0.5 + _anim.value * 0.35),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: widget.border),
-      ),
+        borderRadius: BorderRadius.circular(18), border: Border.all(color: widget.border)),
     ),
   );
 }
 
 class _ShimmerBox extends StatefulWidget {
-  final double w, h, r;
-  final Color surface;
+  final double w, h, r; final Color surface;
   const _ShimmerBox({required this.w, required this.h, required this.r, required this.surface});
   @override State<_ShimmerBox> createState() => _ShimmerBoxState();
 }
@@ -1211,8 +1254,7 @@ class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderState
       width: widget.w, height: widget.h, margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
         color: widget.surface.withOpacity(0.5 + _anim.value * 0.35),
-        borderRadius: BorderRadius.circular(widget.r),
-      ),
+        borderRadius: BorderRadius.circular(widget.r)),
     ),
   );
 }
@@ -1222,28 +1264,23 @@ class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderState
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _RoundedIconBtn extends StatelessWidget {
-  final IconData icon;
-  final Color surface, border, iconColor;
-  final VoidCallback onTap;
+  final IconData icon; final Color surface, border, iconColor; final VoidCallback onTap;
   const _RoundedIconBtn({required this.icon, required this.surface, required this.border, required this.iconColor, required this.onTap});
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
     child: Container(
       width: 42, height: 42,
-      decoration: BoxDecoration(
-        color: surface, borderRadius: BorderRadius.circular(12),
+      decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12),
         border: Border.all(color: border, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))]),
       child: Icon(icon, color: iconColor, size: 20),
     ),
   );
 }
 
 class _BadgePill extends StatelessWidget {
-  final String label;
-  final Color bg;
+  final String label; final Color bg;
   const _BadgePill({required this.label, required this.bg});
   @override
   Widget build(BuildContext context) => Container(
@@ -1254,32 +1291,24 @@ class _BadgePill extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  final String value, label;
-  final Color surface, border, txt1, txt2;
+  final String value, label; final Color surface, border, txt1, txt2;
   const _StatCard({required this.value, required this.label, required this.surface, required this.border, required this.txt1, required this.txt2});
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: surface, borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: border, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(children: [
-        Text(value, style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 17, color: txt1, letterSpacing: -0.3)),
-        const SizedBox(height: 3),
-        Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: txt2, fontWeight: FontWeight.w500)),
-      ]),
-    ),
-  );
+  Widget build(BuildContext context) => Expanded(child: Container(
+    padding: const EdgeInsets.symmetric(vertical: 14),
+    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: border, width: 1),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+    child: Column(children: [
+      Text(value, style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 17, color: txt1, letterSpacing: -0.3)),
+      const SizedBox(height: 3),
+      Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: txt2, fontWeight: FontWeight.w500)),
+    ]),
+  ));
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int idx, cur;
-  final Color txt2;
+  final IconData icon; final String label; final int idx, cur; final Color txt2;
   final void Function(int) onTap;
   const _NavItem({required this.icon, required this.label, required this.idx, required this.cur, required this.txt2, required this.onTap});
   @override
@@ -1294,16 +1323,28 @@ class _NavItem extends StatelessWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Icon(icon, key: ValueKey(active), size: 24,
-              color: active ? AppColors.forestGreen : txt2),
-          ),
+              color: active ? AppColors.forestGreen : txt2)),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(
-            fontFamily: 'Poppins', fontSize: 10,
+          Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 10,
             fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-            color: active ? AppColors.forestGreen : txt2,
-          )),
+            color: active ? AppColors.forestGreen : txt2)),
         ]),
       ),
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAGE TRANSITION HELPER (shared between files)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+PageRoute<T> _campaignRoute<T>(Widget screen) => PageRouteBuilder(
+  pageBuilder: (_, animation, __) => screen,
+  transitionDuration: const Duration(milliseconds: 400),
+  transitionsBuilder: (_, animation, __, child) {
+    final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+    return SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
+      child: FadeTransition(opacity: curved, child: child));
+  },
+);

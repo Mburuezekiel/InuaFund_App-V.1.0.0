@@ -28,4 +28,27 @@ class AppColors {
   static const notifDonation  = primary;
   static const notifMilestone = accent;
   static const notifUpdate    = info;
+
+   static const forestGreen  = Color(0xFF0B5E35);
+  static const midGreen     = Color(0xFF1A8C52);
+  static const limeGreen    = Color(0xFF4CC97A);
+  static const savanna      = Color(0xFFE8A020);
+  static const crimson      = Color(0xFFD93025);
+  static const amber        = Color(0xFFE8860A);
+  static const ink          = Color(0xFF0D0D0D);
+  static const mist         = Color(0xFF8FA896);
+  static const cloud        = Color(0xFFEEEEEE);
+  static const snow         = Color(0xFFF7F7F7);
+  static const white        = Color(0xFFFFFFFF);
+  static const darkBg       = Color(0xFF060E09);
+  static const darkCard     = Color(0xFF0D1A11);
+  static const darkBorder   = Color(0xFF1C2E22);
+  static const darkMist     = Color(0xFF4D6657);
+
+  static const tierGold1   = Color(0xFFFFD700);
+  static const tierGold2   = Color(0xFFFFA500);
+  static const tierSilver1 = Color(0xFFE8E8E8);
+  static const tierSilver2 = Color(0xFFB0B0B0);
+  static const tierBronze1 = Color(0xFFCD7F32);
+  static const tierBronze2 = Color(0xFFA0522D);
 }
