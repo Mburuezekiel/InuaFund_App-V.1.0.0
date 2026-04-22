@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -13,23 +12,18 @@ class AppColors {
   static const midGreen     = Color(0xFF1A8C52);
   static const limeGreen    = Color(0xFF4CC97A);
   static const savanna      = Color(0xFFE8A020);
-  static const savannaLight = Color(0xFFFFF0CC);
   static const crimson      = Color(0xFFD93025);
-  static const sky          = Color(0xFF1877C5);
   static const amber        = Color(0xFFE8860A);
-  static const ink          = Color(0xFF0A1A10);
-  static const charcoal     = Color(0xFF1C2E22);
-  static const slate        = Color(0xFF3D5445);
+  static const ink          = Color(0xFF0D0D0D);
   static const mist         = Color(0xFF8FA896);
-  static const cloud        = Color(0xFFEBF2EE);
-  static const snow         = Color(0xFFF5FAF7);
+  static const cloud        = Color(0xFFEEEEEE);
+  static const snow         = Color(0xFFF7F7F7);
   static const white        = Color(0xFFFFFFFF);
   static const darkBg       = Color(0xFF060E09);
   static const darkCard     = Color(0xFF0D1A11);
   static const darkBorder   = Color(0xFF1C2E22);
   static const darkMist     = Color(0xFF4D6657);
 
-  // Tier colours
   static const tierGold1   = Color(0xFFFFD700);
   static const tierGold2   = Color(0xFFFFA500);
   static const tierSilver1 = Color(0xFFE8E8E8);
@@ -38,19 +32,8 @@ class AppColors {
   static const tierBronze2 = Color(0xFFA0522D);
 }
 
-class AppTextStyles {
-  static const _base = TextStyle(fontFamily: 'Poppins');
-  static TextStyle display(Color c) => _base.copyWith(fontWeight: FontWeight.w900, fontSize: 26, color: c, letterSpacing: -0.5, height: 1.15);
-  static TextStyle title(Color c)   => _base.copyWith(fontWeight: FontWeight.w800, fontSize: 17, color: c, letterSpacing: -0.3);
-  static TextStyle titleSm(Color c) => _base.copyWith(fontWeight: FontWeight.w700, fontSize: 14, color: c, height: 1.35);
-  static TextStyle label(Color c)   => _base.copyWith(fontWeight: FontWeight.w600, fontSize: 12, color: c);
-  static TextStyle body(Color c)    => _base.copyWith(fontWeight: FontWeight.w400, fontSize: 13, color: c, height: 1.5);
-  static TextStyle caption(Color c) => _base.copyWith(fontWeight: FontWeight.w500, fontSize: 11, color: c);
-  static TextStyle mono(Color c)    => _base.copyWith(fontWeight: FontWeight.w800, fontSize: 15, color: c);
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
-// TIER ENUM
+// TIER
 // ═══════════════════════════════════════════════════════════════════════════════
 
 enum CampaignTier { gold, silver, bronze, none }
@@ -65,9 +48,9 @@ extension CampaignTierExt on CampaignTier {
     }
   }
 
-  Color get shadowColor {
+  Color get glowColor {
     switch (this) {
-      case CampaignTier.gold:   return const Color(0x99FFA500);
+      case CampaignTier.gold:   return const Color(0xAAFFA500);
       case CampaignTier.silver: return const Color(0x88B0B0B0);
       case CampaignTier.bronze: return const Color(0x88A0522D);
       case CampaignTier.none:   return Colors.transparent;
@@ -75,11 +58,92 @@ extension CampaignTierExt on CampaignTier {
   }
 
   static CampaignTier fromMomentum(double score) {
-    if (score >= 8.5) return CampaignTier.gold;
-    if (score >= 6.5) return CampaignTier.silver;
-    if (score >= 4.0) return CampaignTier.bronze;
+    if (score >= 8.0) return CampaignTier.gold;
+    if (score >= 6.0) return CampaignTier.silver;
+    if (score >= 3.5) return CampaignTier.bronze;
     return CampaignTier.none;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CROWN + RIBBON MEDAL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class TierMedalBadge extends StatelessWidget {
+  final CampaignTier tier;
+  final double size;
+  const TierMedalBadge({super.key, required this.tier, this.size = 36});
+
+  @override
+  Widget build(BuildContext context) {
+    if (tier == CampaignTier.none) return const SizedBox.shrink();
+    final colors = tier.colors;
+    final glow   = tier.glowColor;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: size, height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+            boxShadow: [BoxShadow(color: glow, blurRadius: 10, spreadRadius: 1, offset: const Offset(0, 3))],
+          ),
+          child: Center(
+            child: CustomPaint(size: Size(size * 0.54, size * 0.40), painter: _CrownPainter()),
+          ),
+        ),
+        Transform.translate(
+          offset: const Offset(0, -2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Strip(w: size * 0.26, h: size * 0.42, color: colors[0]),
+              const SizedBox(width: 2),
+              _Strip(w: size * 0.26, h: size * 0.42, color: colors[1]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Strip extends StatelessWidget {
+  final double w, h;
+  final Color color;
+  const _Strip({required this.w, required this.h, required this.color});
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.only(
+      bottomLeft: Radius.circular(w * 0.45),
+      bottomRight: Radius.circular(w * 0.45),
+    ),
+    child: Container(width: w, height: h, color: color),
+  );
+}
+
+class _CrownPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white.withOpacity(0.93)..style = PaintingStyle.fill;
+    final w = size.width;
+    final h = size.height;
+    final path = Path()
+      ..moveTo(0, h)..lineTo(w, h)
+      ..lineTo(w, h * 0.52)..lineTo(w * 0.78, 0)
+      ..lineTo(w * 0.60, h * 0.46)..lineTo(w * 0.50, 0)
+      ..lineTo(w * 0.40, h * 0.46)..lineTo(w * 0.22, 0)
+      ..lineTo(0, h * 0.52)..close();
+    canvas.drawPath(path, paint);
+    final gem = Paint()..color = Colors.white.withOpacity(0.45)..style = PaintingStyle.fill;
+    final r = w * 0.07;
+    for (final dx in [w * 0.22, w * 0.50, w * 0.78]) {
+      canvas.drawCircle(Offset(dx, r * 0.9), r, gem);
+    }
+  }
+  @override bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -123,7 +187,7 @@ class Campaign {
       try { days = DateTime.parse(j['endDate'].toString()).difference(DateTime.now()).inDays.clamp(0, 9999); } catch (_) {}
     }
     final c = j['creator_Id'] ?? j['creator'];
-    String? creator = c is Map ? c['username']?.toString() : j['username']?.toString() ?? 'Anonymous';
+    final creator = c is Map ? c['username']?.toString() : j['username']?.toString() ?? 'Anonymous';
     return Campaign(
       id: j['_id']?.toString() ?? j['id']?.toString() ?? '',
       title: j['title']?.toString() ?? '',
@@ -157,6 +221,18 @@ class Campaign {
       case 'environment': return [const Color(0xFF1B5E20), const Color(0xFF2E7D32)];
       case 'community':   return [const Color(0xFF4A148C), const Color(0xFF6A1B9A)];
       default:            return [AppColors.forestGreen, AppColors.midGreen];
+    }
+  }
+
+  IconData get categoryIcon {
+    switch (category.toLowerCase()) {
+      case 'medical':     return Icons.favorite_rounded;
+      case 'education':   return Icons.school_rounded;
+      case 'emergencies': return Icons.warning_amber_rounded;
+      case 'water':       return Icons.water_drop_rounded;
+      case 'environment': return Icons.eco_rounded;
+      case 'community':   return Icons.people_rounded;
+      default:            return Icons.volunteer_activism_rounded;
     }
   }
 }
@@ -215,247 +291,113 @@ class CampaignService {
   }
 
   static List<Campaign> _mock() => [
-    const Campaign(id:'1', title:'Help Mama Wanjiku with Cancer Treatment',
-      description:'Mama Wanjiku needs urgent support for chemotherapy at KNH. She is a single mother of three.',
-      category:'medical', amountRaised:145000, goal:300000, completionPercentage:48.3,
-      daysRemaining:14, donorCount:89, urgencyLevel:'high', momentumScore:8.7, creatorName:'James Kamau'),
-    const Campaign(id:'2', title:'Kibera School Desks & Books Drive',
-      description:'Providing quality desks and learning materials for 200 students in Kibera primary school.',
-      category:'education', amountRaised:67500, goal:120000, completionPercentage:56.3,
-      daysRemaining:30, donorCount:156, urgencyLevel:'low', momentumScore:6.8, creatorName:'Faith Otieno'),
-    const Campaign(id:'3', title:'Flood Relief — Tana River Families',
-      description:'Emergency relief for 500+ families displaced by devastating floods in Tana River County.',
-      category:'emergencies', amountRaised:312000, goal:400000, completionPercentage:78.0,
-      daysRemaining:7, donorCount:423, urgencyLevel:'high', momentumScore:9.1, creatorName:'Red Cross Kenya'),
-    const Campaign(id:'4', title:'Borehole for Turkana Community',
-      description:'Clean water access for 3,000 people in remote Turkana through a solar-powered borehole.',
-      category:'water', amountRaised:230000, goal:450000, completionPercentage:51.1,
-      daysRemaining:45, donorCount:201, urgencyLevel:'medium', momentumScore:5.2, creatorName:'WaterAid Kenya'),
-    const Campaign(id:'5', title:'Bursary for 12 Students — Kisumu',
-      description:'Scholarship fund for bright students from low-income families in Kisumu.',
-      category:'education', amountRaised:88000, goal:150000, completionPercentage:58.7,
-      daysRemaining:12, donorCount:67, urgencyLevel:'medium', momentumScore:4.2, creatorName:'Kisumu Youth Fund'),
+    const Campaign(
+      id: '1', title: 'Help Mama Wanjiku with Cancer Treatment',
+      description: 'Mama Wanjiku needs urgent support for chemotherapy at KNH.',
+      category: 'medical', amountRaised: 145000, goal: 300000,
+      completionPercentage: 48.3, daysRemaining: 14, donorCount: 89,
+      urgencyLevel: 'high', momentumScore: 9.1, creatorName: 'James Kamau'),
+    const Campaign(
+      id: '2', title: 'Flood Relief — Tana River Families',
+      description: 'Emergency relief for 500+ families displaced by floods.',
+      category: 'emergencies', amountRaised: 312000, goal: 400000,
+      completionPercentage: 78.0, daysRemaining: 7, donorCount: 423,
+      urgencyLevel: 'high', momentumScore: 8.5, creatorName: 'Red Cross Kenya'),
+    const Campaign(
+      id: '3', title: 'Kibera School Desks & Books Drive',
+      description: 'Quality desks and learning materials for 200 students.',
+      category: 'education', amountRaised: 67500, goal: 120000,
+      completionPercentage: 56.3, daysRemaining: 30, donorCount: 156,
+      urgencyLevel: 'low', momentumScore: 6.2, creatorName: 'Faith Otieno'),
+    const Campaign(
+      id: '4', title: 'Borehole for Turkana Community',
+      description: 'Clean water access for 3,000 people via solar borehole.',
+      category: 'water', amountRaised: 230000, goal: 450000,
+      completionPercentage: 51.1, daysRemaining: 45, donorCount: 201,
+      urgencyLevel: 'medium', momentumScore: 5.0, creatorName: 'WaterAid Kenya'),
+    const Campaign(
+      id: '5', title: 'Bursary for 12 Students — Kisumu',
+      description: 'Scholarship fund for bright students in Kisumu.',
+      category: 'education', amountRaised: 88000, goal: 150000,
+      completionPercentage: 58.7, daysRemaining: 12, donorCount: 67,
+      urgencyLevel: 'medium', momentumScore: 3.8, creatorName: 'Kisumu Youth Fund'),
   ];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CROWN + RIBBON MEDAL WIDGET
+// ANIMATED DONATE BUTTON (inside card)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class TierMedalBadge extends StatelessWidget {
-  final CampaignTier tier;
-  final double size;
-  const TierMedalBadge({super.key, required this.tier, this.size = 32});
-
-  @override
-  Widget build(BuildContext context) {
-    if (tier == CampaignTier.none) return const SizedBox.shrink();
-    final colors = tier.colors;
-    final shadow = tier.shadowColor;
-    final circleSize = size;
-    final stripW = size * 0.27;
-    final stripH = size * 0.46;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // ── Medal disc with crown ─────────────────────────────────────────────
-        Container(
-          width: circleSize, height: circleSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: colors,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(color: shadow, blurRadius: 8, spreadRadius: 1, offset: const Offset(0, 3)),
-              BoxShadow(color: Colors.white.withOpacity(0.35), blurRadius: 2, offset: const Offset(-1, -1)),
-            ],
-          ),
-          child: Center(
-            child: CustomPaint(
-              size: Size(circleSize * 0.55, circleSize * 0.42),
-              painter: _CrownPainter(),
-            ),
-          ),
-        ),
-        // ── Ribbon strips ─────────────────────────────────────────────────────
-        Transform.translate(
-          offset: const Offset(0, -3),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _RibbonStrip(width: stripW, height: stripH, color: colors[0]),
-              const SizedBox(width: 2),
-              _RibbonStrip(width: stripW, height: stripH, color: colors[1]),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+class _AnimatedDonateButton extends StatefulWidget {
+  const _AnimatedDonateButton();
+  @override State<_AnimatedDonateButton> createState() => _AnimatedDonateButtonState();
 }
 
-class _RibbonStrip extends StatelessWidget {
-  final double width, height;
-  final Color color;
-  const _RibbonStrip({required this.width, required this.height, required this.color});
-
-  @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.only(
-      bottomLeft: Radius.circular(width * 0.4),
-      bottomRight: Radius.circular(width * 0.4),
-    ),
-    child: Container(width: width, height: height, color: color),
-  );
-}
-
-// Custom painter for a clean crown silhouette
-class _CrownPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.92)
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    final w = size.width;
-    final h = size.height;
-
-    // Crown shape: base bar + 3 points
-    // Base
-    path.moveTo(0, h);
-    path.lineTo(w, h);
-    // Right down-slope
-    path.lineTo(w, h * 0.55);
-    // Right peak
-    path.lineTo(w * 0.78, h * 0.0);
-    // Middle-right slope down
-    path.lineTo(w * 0.6, h * 0.48);
-    // Centre peak
-    path.lineTo(w * 0.5, h * 0.0);
-    // Middle-left slope down
-    path.lineTo(w * 0.4, h * 0.48);
-    // Left peak
-    path.lineTo(w * 0.22, h * 0.0);
-    // Left down-slope
-    path.lineTo(0, h * 0.55);
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // 3 small circle gems on peaks
-    final gemPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
-      ..style = PaintingStyle.fill;
-    final gemR = w * 0.07;
-    for (final dx in [w * 0.22, w * 0.5, w * 0.78]) {
-      canvas.drawCircle(Offset(dx, gemR * 0.8), gemR, gemPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ANIMATED DONATE BUTTON
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class AnimatedDonateButton extends StatefulWidget {
-  final VoidCallback? onDonate;
-  final bool compact;
-  const AnimatedDonateButton({super.key, this.onDonate, this.compact = false});
-
-  @override
-  State<AnimatedDonateButton> createState() => _AnimatedDonateButtonState();
-}
-
-class _AnimatedDonateButtonState extends State<AnimatedDonateButton>
+class _AnimatedDonateButtonState extends State<_AnimatedDonateButton>
     with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-  bool _tapped = false;
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  bool _done = false;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 180));
-    _scale = Tween<double>(begin: 1.0, end: 0.94)
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 160));
+    _scale = Tween(begin: 1.0, end: 0.93)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  @override void dispose() { _ctrl.dispose(); super.dispose(); }
 
-  void _handleTap() async {
-    setState(() => _tapped = true);
-    await _ctrl.forward();
-    await _ctrl.reverse();
-    widget.onDonate?.call();
-    await Future.delayed(const Duration(milliseconds: 1600));
-    if (mounted) setState(() => _tapped = false);
+  Future<void> _tap() async {
+    await _ctrl.forward(); await _ctrl.reverse();
+    if (mounted) setState(() => _done = true);
+    await Future.delayed(const Duration(milliseconds: 1800));
+    if (mounted) setState(() => _done = false);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scale,
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          height: widget.compact ? 38 : 46,
-          decoration: BoxDecoration(
-            gradient: _tapped
-                ? const LinearGradient(colors: [Color(0xFF1A8C52), Color(0xFF4CC97A)],
-                    begin: Alignment.centerLeft, end: Alignment.centerRight)
-                : const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen],
-                    begin: Alignment.centerLeft, end: Alignment.centerRight),
-            borderRadius: BorderRadius.circular(widget.compact ? 12 : 14),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.midGreen.withOpacity(_tapped ? 0.25 : 0.40),
-                blurRadius: _tapped ? 8 : 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
+  Widget build(BuildContext context) => ScaleTransition(
+    scale: _scale,
+    child: GestureDetector(
+      onTap: _tap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOut,
+        height: 46,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _done
+                ? [const Color(0xFF1A8C52), const Color(0xFF4CC97A)]
+                : [AppColors.forestGreen, AppColors.limeGreen],
+            begin: Alignment.centerLeft, end: Alignment.centerRight,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
-                child: _tapped
-                    ? const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18, key: ValueKey('check'))
-                    : const Text('💚', style: TextStyle(fontSize: 15), key: ValueKey('heart')),
-              ),
-              const SizedBox(width: 8),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Text(
-                  _tapped ? 'Donated! 🎉' : 'Donate Now',
-                  key: ValueKey(_tapped),
-                  style: const TextStyle(
-                    fontFamily: 'Poppins', fontWeight: FontWeight.w800,
-                    fontSize: 14, color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          borderRadius: BorderRadius.circular(13),
+          boxShadow: [BoxShadow(
+            color: AppColors.midGreen.withOpacity(_done ? 0.22 : 0.38),
+            blurRadius: 12, offset: const Offset(0, 4))],
         ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+            child: _done
+                ? const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18, key: ValueKey('ok'))
+                : const Text('💚', style: TextStyle(fontSize: 15), key: ValueKey('h')),
+          ),
+          const SizedBox(width: 8),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: Text(
+              _done ? 'Donated! 🎉' : 'Donate Now',
+              key: ValueKey(_done),
+              style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
+            ),
+          ),
+        ]),
       ),
-    );
-  }
+    ),
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -469,7 +411,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isDark = false;
-  int _navIndex = 0;
+  int  _navIndex = 0;
   String _selectedCategory = 'All';
   int _carouselPage = 0;
 
@@ -484,42 +426,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _searching = false;
   final _searchCtrl = TextEditingController();
 
-  late PageController _pageCtrl;
+  late final PageController _pageCtrl;
+  late final AnimationController _listCtrl;
 
-  // Stagger animation controller for list cards
-  late AnimationController _listStaggerCtrl;
+  Color get bg      => _isDark ? AppColors.darkBg    : AppColors.snow;
+  Color get surface => _isDark ? AppColors.darkCard   : AppColors.white;
+  Color get border  => _isDark ? AppColors.darkBorder : AppColors.cloud;
+  Color get txt1    => _isDark ? AppColors.white      : AppColors.ink;
+  Color get txt2    => _isDark ? AppColors.darkMist   : const Color(0xFF6B7280);
+  Color get txtHint => _isDark ? AppColors.darkMist   : const Color(0xFFB0B8BF);
+
+  static const _categories = [
+    {'label': 'All',         'icon': Icons.apps_rounded},
+    {'label': 'medical',     'icon': Icons.favorite_rounded},
+    {'label': 'education',   'icon': Icons.school_rounded},
+    {'label': 'community',   'icon': Icons.people_rounded},
+    {'label': 'emergencies', 'icon': Icons.warning_amber_rounded},
+    {'label': 'water',       'icon': Icons.water_drop_rounded},
+    {'label': 'environment', 'icon': Icons.eco_rounded},
+  ];
 
   @override
   void initState() {
     super.initState();
     _pageCtrl = PageController(viewportFraction: 0.90);
-    _listStaggerCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 600));
+    _listCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
     _loadAll();
   }
 
-  // ── colors ────────────────────────────────────────────────────────────────
-  Color get bg      => _isDark ? AppColors.darkBg    : AppColors.snow;
-  Color get surface => _isDark ? AppColors.darkCard   : AppColors.white;
-  Color get border  => _isDark ? AppColors.darkBorder : AppColors.cloud;
-  Color get txt1    => _isDark ? AppColors.white      : AppColors.ink;
-  Color get txt2    => _isDark ? AppColors.darkMist   : AppColors.slate;
-  Color get txtHint => _isDark ? const Color(0xFF3D5445) : AppColors.mist;
-
-  static const _categories = [
-    {'label':'All',          'emoji':'🌍'},
-    {'label':'medical',      'emoji':'🏥'},
-    {'label':'education',    'emoji':'📚'},
-    {'label':'community',    'emoji':'🤝'},
-    {'label':'emergencies',  'emoji':'🚨'},
-    {'label':'water',        'emoji':'💧'},
-    {'label':'environment',  'emoji':'🌿'},
-  ];
-
-  Future<void> _loadAll() async {
-    _loadFeatured();
-    _loadCampaigns();
-  }
+  Future<void> _loadAll() async { _loadFeatured(); _loadCampaigns(); }
 
   Future<void> _loadFeatured() async {
     setState(() => _loadingFeatured = true);
@@ -532,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final d = await CampaignService.fetchAll(category: _selectedCategory);
     if (mounted) {
       setState(() { _campaigns = d; _loadingCampaigns = false; });
-      _listStaggerCtrl.forward(from: 0);
+      _listCtrl.forward(from: 0);
     }
   }
 
@@ -544,12 +479,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   @override
-  void dispose() {
-    _pageCtrl.dispose();
-    _listStaggerCtrl.dispose();
-    _searchCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _pageCtrl.dispose(); _listCtrl.dispose(); _searchCtrl.dispose(); super.dispose(); }
 
   String _kes(double v) {
     if (v >= 1000000) return 'KES ${(v / 1000000).toStringAsFixed(1)}M';
@@ -564,8 +494,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       statusBarBrightness: _isDark ? Brightness.dark : Brightness.light,
     ));
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
+      duration: const Duration(milliseconds: 320),
       color: bg,
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -575,32 +504,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ── SEARCH ───────────────────────────────────────────────────────────────────
+  // ── SEARCH VIEW ──────────────────────────────────────────────────────────────
   Widget _buildSearch() => Column(children: [
     Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: Row(children: [
         Expanded(
           child: Container(
-            height: 52,
+            height: 50,
             decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(16),
+              color: surface, borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.midGreen, width: 1.5),
-              boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.15), blurRadius: 12, offset: const Offset(0,4))],
+              boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 3))],
             ),
             child: Row(children: [
               const SizedBox(width: 14),
-              const Icon(Icons.search_rounded, color: AppColors.midGreen, size: 20),
+              const Icon(Icons.search_rounded, color: AppColors.midGreen, size: 19),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
-                  controller: _searchCtrl,
-                  autofocus: true,
-                  style: AppTextStyles.body(txt1),
+                  controller: _searchCtrl, autofocus: true,
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt1),
                   decoration: InputDecoration(
                     hintText: 'Search campaigns, causes…',
-                    hintStyle: AppTextStyles.body(txtHint),
+                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint),
                     border: InputBorder.none,
                   ),
                   onChanged: (v) { setState(() => _searchQuery = v); _doSearch(v); },
@@ -609,10 +536,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               if (_searchQuery.isNotEmpty)
                 GestureDetector(
                   onTap: () { _searchCtrl.clear(); setState(() { _searchQuery = ''; _searchResults = []; }); },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.close_rounded, color: txt2, size: 18),
-                  ),
+                  child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Icon(Icons.close_rounded, color: txt2, size: 18)),
                 ),
             ]),
           ),
@@ -621,9 +546,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         GestureDetector(
           onTap: () { setState(() { _searchActive = false; _searchQuery = ''; _searchResults = []; }); _searchCtrl.clear(); },
           child: Container(
-            height: 52, padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: border)),
-            child: Center(child: Text('Cancel', style: AppTextStyles.label(AppColors.midGreen))),
+            height: 50, padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: border)),
+            child: Center(child: Text('Cancel', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.midGreen))),
           ),
         ),
       ]),
@@ -631,7 +556,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     const SizedBox(height: 16),
     Expanded(
       child: _searching
-          ? const Center(child: CircularProgressIndicator(color: AppColors.midGreen, strokeWidth: 2.5))
+          ? Center(child: CircularProgressIndicator(color: AppColors.midGreen, strokeWidth: 2.5))
           : _searchQuery.length < 2
               ? _searchHints()
               : _searchResults.isEmpty
@@ -641,8 +566,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       itemCount: _searchResults.length,
                       itemBuilder: (_, i) => _SearchCard(
                         c: _searchResults[i], surface: surface, border: border,
-                        txt1: txt1, txt2: txt2, kes: _kes),
-                    ),
+                        txt1: txt1, txt2: txt2, kes: _kes)),
     ),
   ]);
 
@@ -651,45 +575,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Popular searches', style: AppTextStyles.title(txt1)),
+        Text('Popular searches', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16, color: txt1)),
         const SizedBox(height: 14),
         Wrap(spacing: 10, runSpacing: 10, children: tags.map((t) => GestureDetector(
           onTap: () { _searchCtrl.text = t; setState(() => _searchQuery = t); _doSearch(t); },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
             decoration: BoxDecoration(
               color: AppColors.midGreen.withOpacity(0.08),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(color: AppColors.midGreen.withOpacity(0.25)),
             ),
-            child: Text(t, style: AppTextStyles.label(AppColors.midGreen)),
+            child: Text(t, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.midGreen)),
           ),
         )).toList()),
       ]),
     );
   }
 
-  Widget _noResults() => Center(
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.search_off_rounded, size: 56, color: txtHint),
-      const SizedBox(height: 14),
-      Text('No campaigns found', style: AppTextStyles.title(txt1)),
-      const SizedBox(height: 6),
-      Text('Try a different keyword', style: AppTextStyles.body(txt2)),
-    ]),
-  );
+  Widget _noResults() => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+    Icon(Icons.search_off_rounded, size: 54, color: txtHint),
+    const SizedBox(height: 12),
+    Text('No campaigns found', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16, color: txt1)),
+    const SizedBox(height: 6),
+    Text('Try a different keyword', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
+  ]));
 
-  // ── MAIN CONTENT ─────────────────────────────────────────────────────────────
+  // ── MAIN SCROLL VIEW ─────────────────────────────────────────────────────────
   Widget _buildMain() => CustomScrollView(
     physics: const BouncingScrollPhysics(),
     slivers: [
       SliverToBoxAdapter(child: _topBar()),
       SliverToBoxAdapter(child: _searchBar()),
-      SliverToBoxAdapter(child: _statsRibbon()),
-      SliverToBoxAdapter(child: _sectionLabel('Featured Campaigns')),
+      SliverToBoxAdapter(child: _statsRow()),
+      SliverToBoxAdapter(child: _sectionLabel('Featured campaigns')),
       SliverToBoxAdapter(child: _featuredCarousel()),
-      SliverToBoxAdapter(child: _categoryRow()),
-      SliverToBoxAdapter(child: _sectionLabel('Active Campaigns')),
+      SliverToBoxAdapter(child: _sectionLabel('Browse by category')),
+      SliverToBoxAdapter(child: _categoryChips()),
+      SliverToBoxAdapter(child: _activeCampaignsHeader()),
       if (_loadingCampaigns)
         SliverList(delegate: SliverChildBuilderDelegate(
           (_, i) => _SkeletonCard(surface: surface, border: border), childCount: 3))
@@ -697,10 +620,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         SliverToBoxAdapter(child: _emptyState())
       else
         SliverList(delegate: SliverChildBuilderDelegate(
-          (_, i) => _StaggeredCard(
-            index: i,
-            controller: _listStaggerCtrl,
-            child: _CampaignCard(
+          (_, i) => _StaggerItem(
+            index: i, ctrl: _listCtrl,
+            child: _ActiveCampaignCard(
               c: _campaigns[i], isDark: _isDark,
               surface: surface, border: border,
               txt1: txt1, txt2: txt2, txtHint: txtHint, kes: _kes,
@@ -712,136 +634,119 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ],
   );
 
-  // ── Top bar ──────────────────────────────────────────────────────────────────
+  // ── Top bar — greeting left, search+bell icons right (NO logo/avatar) ────────
   Widget _topBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-    child: Row(children: [
-      Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen],
-                begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.4), blurRadius: 8, offset: const Offset(0,3))],
-          ),
-          child: const Center(child: Text('IF', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 13, color: Colors.white))),
-        ),
-        const SizedBox(width: 8),
-        Text.rich(TextSpan(children: [
-          const TextSpan(text: 'Inua', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.forestGreen)),
-          TextSpan(text: 'Fund', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w400, fontSize: 18, color: txt2)),
-        ])),
-      ]),
-      const Spacer(),
-      _IconBtn(icon: _isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-        surface: surface, border: border, iconColor: txt1,
-        onTap: () => setState(() => _isDark = !_isDark)),
+    padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Good evening',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2, fontWeight: FontWeight.w400)),
+          const SizedBox(height: 2),
+          Text('Karibu, Eric 👋',
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 26, color: txt1, letterSpacing: -0.5, height: 1.15)),
+          const SizedBox(height: 3),
+          Text('What cause will you support today?',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
+        ]),
+      ),
+      const SizedBox(width: 12),
+      _RoundedIconBtn(icon: Icons.search_rounded, surface: surface, border: border, iconColor: txt1,
+        onTap: () => setState(() => _searchActive = true)),
       const SizedBox(width: 8),
-      Stack(children: [
-        _IconBtn(icon: Icons.notifications_outlined, surface: surface, border: border, iconColor: txt1, onTap: () {}),
-        Positioned(top: 9, right: 9,
-          child: Container(width: 8, height: 8,
+      Stack(clipBehavior: Clip.none, children: [
+        _RoundedIconBtn(icon: Icons.notifications_outlined, surface: surface, border: border, iconColor: txt1, onTap: () {}),
+        Positioned(top: 8, right: 8,
+          child: Container(
+            width: 9, height: 9,
             decoration: BoxDecoration(
               color: AppColors.crimson, shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: AppColors.crimson.withOpacity(0.5), blurRadius: 6, spreadRadius: 1)],
-            ))),
+              border: Border.all(color: surface, width: 1.5),
+            ),
+          )),
       ]),
-      const SizedBox(width: 8),
-      Container(
-        width: 42, height: 42,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen],
-              begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Center(child: Text('E', style: TextStyle(fontFamily:'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: Colors.white))),
-      ),
     ]),
   );
 
-  // ── Search bar ───────────────────────────────────────────────────────────────
+  // ── Search bar — grey border, green Filter button ─────────────────────────────
   Widget _searchBar() => Padding(
     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
     child: GestureDetector(
       onTap: () => setState(() => _searchActive = true),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(14),
+          color: surface, borderRadius: BorderRadius.circular(14),
           border: Border.all(color: border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(_isDark ? 0.3 : 0.04), blurRadius: 10, offset: const Offset(0,3))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(children: [
           const SizedBox(width: 14),
-          Icon(Icons.search_rounded, color: txtHint, size: 20),
-          const SizedBox(width: 10),
-          Text('Search campaigns, causes…', style: AppTextStyles.body(txtHint)),
-          const Spacer(),
+          Icon(Icons.search_rounded, color: txtHint, size: 19),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Search campaigns, causes...', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint))),
           Container(
             margin: const EdgeInsets.all(6),
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-            decoration: BoxDecoration(color: AppColors.forestGreen, borderRadius: BorderRadius.circular(9)),
-            child: const Icon(Icons.tune_rounded, color: Colors.white, size: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(10)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: const [
+              Icon(Icons.tune_rounded, color: Colors.white, size: 14),
+              SizedBox(width: 5),
+              Text('Filter', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: Colors.white)),
+            ]),
           ),
         ]),
       ),
     ),
   );
 
-  // ── Stats ribbon ─────────────────────────────────────────────────────────────
-  Widget _statsRibbon() {
+  // ── Stats — 3 separate white cards side by side ───────────────────────────────
+  Widget _statsRow() {
     final totalRaised = _campaigns.fold<double>(0, (s, c) => s + c.amountRaised);
     final totalDonors = _campaigns.fold<int>(0, (s, c) => s + c.donorCount);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.forestGreen, AppColors.midGreen, AppColors.limeGreen],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: AppColors.forestGreen.withOpacity(0.45), blurRadius: 22, offset: const Offset(0,8))],
-        ),
-        child: Row(children: [
-          _StatChip(icon: '🎯', label: 'Campaigns', value: _campaigns.isEmpty ? '—' : _campaigns.length.toString()),
-          _Vline(),
-          _StatChip(icon: '📈', label: 'Raised', value: _kes(totalRaised)),
-          _Vline(),
-          _StatChip(icon: '❤️', label: 'Donors',
-            value: totalDonors > 1000 ? '${(totalDonors/1000).toStringAsFixed(1)}K' : totalDonors.toString()),
-        ]),
-      ),
+      child: Row(children: [
+        _StatCard(value: _campaigns.isEmpty ? '—' : _campaigns.length.toString(), label: 'Campaigns', surface: surface, border: border, txt1: txt1, txt2: txt2),
+        const SizedBox(width: 10),
+        _StatCard(value: _kes(totalRaised), label: 'Total raised', surface: surface, border: border, txt1: txt1, txt2: txt2),
+        const SizedBox(width: 10),
+        _StatCard(
+          value: totalDonors >= 1000 ? '${(totalDonors / 1000).toStringAsFixed(1)}K' : totalDonors.toString(),
+          label: 'Donors', surface: surface, border: border, txt1: txt1, txt2: txt2),
+      ]),
     );
   }
 
-  // ── Featured carousel ────────────────────────────────────────────────────────
+  Widget _sectionLabel(String text) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+    child: Row(children: [
+      Container(width: 4, height: 20, decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(3))),
+      const SizedBox(width: 10),
+      Text(text, style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: txt1, letterSpacing: -0.2)),
+    ]),
+  );
+
   Widget _featuredCarousel() => Column(children: [
     SizedBox(
-      height: 250,
+      height: 330,
       child: _loadingFeatured
-          ? _featuredShimmer()
+          ? _shimmerCarousel()
           : _featured.isEmpty ? const SizedBox()
           : PageView.builder(
               controller: _pageCtrl,
               itemCount: _featured.length,
               onPageChanged: (i) => setState(() => _carouselPage = i),
-              itemBuilder: (_, i) => _FeaturedCard(c: _featured[i], kes: _kes),
+              itemBuilder: (_, i) => _FeaturedCard(c: _featured[i], kes: _kes, surface: surface, border: border, txt1: txt1, txt2: txt2),
             ),
     ),
     if (!_loadingFeatured && _featured.isNotEmpty) ...[
       const SizedBox(height: 12),
       Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(_featured.length, (i) =>
         AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: _carouselPage == i ? 24 : 7,
-          height: 7,
+          width: _carouselPage == i ? 24 : 7, height: 7,
           decoration: BoxDecoration(
             color: _carouselPage == i ? AppColors.midGreen : border,
             borderRadius: BorderRadius.circular(4),
@@ -851,50 +756,67 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ],
   ]);
 
-  Widget _featuredShimmer() => ListView.builder(
-    scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: 20),
+  Widget _shimmerCarousel() => ListView.builder(
+    scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 10),
     itemCount: 2,
-    itemBuilder: (_, __) => _ShimmerBox(w: 300, h: 230, radius: 24, surface: surface, border: border),
+    itemBuilder: (_, __) => _ShimmerBox(w: 300, h: 310, r: 22, surface: surface));
+
+  // ── Category chips — dot for active, icon for rest ────────────────────────────
+  Widget _categoryChips() => SizedBox(
+    height: 40,
+    child: ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _categories.length,
+      itemBuilder: (_, i) {
+        final cat = _categories[i];
+        final sel = _selectedCategory == cat['label'];
+        return GestureDetector(
+          onTap: () { setState(() => _selectedCategory = cat['label'] as String); _loadCampaigns(); },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200), curve: Curves.easeInOut,
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: sel ? AppColors.midGreen : surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: sel ? AppColors.midGreen : border, width: 1.2),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (sel)
+                Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6),
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle))
+              else ...[
+                Icon(cat['icon'] as IconData, size: 13, color: txt2),
+                const SizedBox(width: 5),
+              ],
+              Text(cat['label'] as String,
+                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13,
+                  color: sel ? Colors.white : txt2)),
+            ]),
+          ),
+        );
+      },
+    ),
   );
 
-  // ── Category chips ───────────────────────────────────────────────────────────
-  Widget _categoryRow() => Padding(
-    padding: const EdgeInsets.only(top: 4),
-    child: SizedBox(
-      height: 44,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _categories.length,
-        itemBuilder: (_, i) {
-          final cat = _categories[i];
-          final sel = _selectedCategory == cat['label'];
-          return GestureDetector(
-            onTap: () { setState(() => _selectedCategory = cat['label'] as String); _loadCampaigns(); },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeInOut,
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: sel ? AppColors.forestGreen : surface,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: sel ? AppColors.forestGreen : border),
-                boxShadow: sel
-                    ? [BoxShadow(color: AppColors.forestGreen.withOpacity(0.35), blurRadius: 10, offset: const Offset(0,4))]
-                    : [],
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(cat['emoji'] as String, style: const TextStyle(fontSize: 13)),
-                const SizedBox(width: 6),
-                Text(cat['label'] as String, style: AppTextStyles.label(sel ? AppColors.white : txt2)),
-              ]),
-            ),
-          );
-        },
+  Widget _activeCampaignsHeader() => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+    child: Row(children: [
+      Container(width: 4, height: 20, decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(3))),
+      const SizedBox(width: 10),
+      Text('Active campaigns', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: txt1, letterSpacing: -0.2)),
+      const Spacer(),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppColors.midGreen.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.midGreen.withOpacity(0.2)),
+        ),
+        child: const Text('See all', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.midGreen)),
       ),
-    ),
+    ]),
   );
 
   Widget _emptyState() => Padding(
@@ -902,50 +824,39 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     child: Column(children: [
       const Text('🌿', style: TextStyle(fontSize: 52)),
       const SizedBox(height: 14),
-      Text('No campaigns yet', style: AppTextStyles.title(txt1), textAlign: TextAlign.center),
+      Text('No campaigns yet', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16, color: txt1), textAlign: TextAlign.center),
       const SizedBox(height: 6),
-      Text('Be the first to start a campaign in this category', style: AppTextStyles.body(txt2), textAlign: TextAlign.center),
+      Text('Be the first in this category', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2), textAlign: TextAlign.center),
     ]),
   );
 
-  Widget _sectionLabel(String label) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
-    child: Row(children: [
-      Container(width: 4, height: 20, decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(width: 10),
-      Text(label, style: AppTextStyles.title(txt1)),
-    ]),
-  );
-
-  // ── Bottom nav ───────────────────────────────────────────────────────────────
   Widget _buildNav() => AnimatedContainer(
     duration: const Duration(milliseconds: 300),
     decoration: BoxDecoration(
       color: surface,
       border: Border(top: BorderSide(color: border, width: 0.8)),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(_isDark ? 0.5 : 0.07), blurRadius: 20, offset: const Offset(0,-4))],
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(_isDark ? 0.45 : 0.06), blurRadius: 18, offset: const Offset(0, -4))],
     ),
     child: SafeArea(
       child: SizedBox(
         height: 64,
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          _NavBtn(icon: Icons.home_rounded,            label: 'Home',    idx: 0, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
-          _NavBtn(icon: Icons.explore_outlined,        label: 'Explore', idx: 1, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
+          _NavItem(icon: Icons.home_rounded,           label: 'Home',    idx: 0, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
+          _NavItem(icon: Icons.explore_rounded,         label: 'Explore',  idx: 1, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
           GestureDetector(
             onTap: () {},
             child: Container(
               width: 54, height: 54,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.5), blurRadius: 16, offset: const Offset(0,5))],
+                gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 5))],
               ),
               child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
             ),
           ),
-          _NavBtn(icon: Icons.notifications_outlined, label: 'Alerts',  idx: 3, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
-          _NavBtn(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
+          _NavItem(icon: Icons.notifications_outlined, label: 'Alerts',  idx: 3, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
+          _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4, cur: _navIndex, txt2: txt2, onTap: (i) => setState(() => _navIndex = i)),
         ]),
       ),
     ),
@@ -953,45 +864,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// STAGGERED LIST ANIMATION WRAPPER
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _StaggeredCard extends StatelessWidget {
-  final int index;
-  final AnimationController controller;
-  final Widget child;
-
-  const _StaggeredCard({required this.index, required this.controller, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final start = (index * 0.12).clamp(0.0, 0.8);
-    final end   = (start + 0.4).clamp(0.0, 1.0);
-    final curved = CurvedAnimation(
-      parent: controller,
-      curve: Interval(start, end, curve: Curves.easeOutCubic),
-    );
-    return AnimatedBuilder(
-      animation: curved,
-      builder: (_, __) => Opacity(
-        opacity: curved.value,
-        child: Transform.translate(
-          offset: Offset(0, 24 * (1 - curved.value)),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // FEATURED CARD
+// Two-part: gradient image area TOP + white info section BOTTOM
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _FeaturedCard extends StatelessWidget {
   final Campaign c;
   final String Function(double) kes;
-  const _FeaturedCard({required this.c, required this.kes});
+  final Color surface, border, txt1, txt2;
+  const _FeaturedCard({required this.c, required this.kes, required this.surface, required this.border, required this.txt1, required this.txt2});
 
   @override
   Widget build(BuildContext context) {
@@ -999,120 +880,104 @@ class _FeaturedCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 7),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: c.categoryGradient[0].withOpacity(0.4), blurRadius: 22, offset: const Offset(0,10))],
+        color: surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 20, offset: const Offset(0, 6))],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(children: [
-          // Background
-          if (c.featuredImage != null)
-            Positioned.fill(child: Image.network(c.featuredImage!, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _gradientBg(c.categoryGradient)))
-          else
-            Positioned.fill(child: _gradientBg(c.categoryGradient)),
-          // Dark scrim
-          Positioned.fill(child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.78), Colors.black.withOpacity(0.08)],
-                begin: Alignment.bottomCenter, end: Alignment.topCenter,
-              ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(children: [
+        // ── Gradient/image top ────────────────────────────────────────────────
+        SizedBox(
+          height: 170,
+          child: Stack(children: [
+            Positioned.fill(
+              child: c.featuredImage != null
+                  ? Image.network(c.featuredImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradBg())
+                  : _gradBg(),
             ),
-          )),
-          // Kenyan-pattern accent top bar
-          Positioned(top: 0, left: 0, right: 0,
-            child: Container(height: 5,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [AppColors.savanna, AppColors.limeGreen, AppColors.savanna]),
-              ),
-            ),
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Badges + tier medal
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (c.urgencyLevel == 'high') ...[
-                  _Pill(label: '🔥 URGENT', bg: AppColors.crimson.withOpacity(0.9)),
-                  const SizedBox(width: 6),
-                ],
-                if (c.momentumScore > 7)
-                  _Pill(label: '⚡ Trending', bg: AppColors.amber.withOpacity(0.9)),
-                const Spacer(),
-                // Tier medal badge
-                if (c.tier != CampaignTier.none)
-                  TierMedalBadge(tier: c.tier, size: 30),
-              ]),
-              const Spacer(),
-              // Creator
-              if (c.creatorName != null)
-                Row(children: [
-                  const Icon(Icons.person_outline_rounded, color: Colors.white60, size: 12),
-                  const SizedBox(width: 4),
-                  Text('by ${c.creatorName}',
-                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.white60)),
-                ]),
-              const SizedBox(height: 4),
-              // Title
-              Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: Colors.white, height: 1.3)),
-              const SizedBox(height: 12),
-              // Progress bar
-              ClipRRect(
+            Positioned.fill(child: Container(
+              decoration: BoxDecoration(gradient: LinearGradient(
+                colors: [Colors.transparent, Colors.black.withOpacity(0.22)],
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              )),
+            )),
+            // Badge pills top-left
+            Positioned(top: 14, left: 14, child: Row(children: [
+              if (c.urgencyLevel == 'high') ...[
+                _BadgePill(label: 'URGENT', bg: AppColors.crimson),
+                const SizedBox(width: 6),
+              ],
+              _BadgePill(label: c.category.toUpperCase(), bg: AppColors.midGreen),
+            ])),
+            // Crown medal top-right
+            if (c.tier != CampaignTier.none)
+              Positioned(top: 10, right: 14, child: TierMedalBadge(tier: c.tier, size: 36)),
+            // Placeholder if no image
+            if (c.featuredImage == null)
+              const Center(child: Icon(Icons.add_photo_alternate_rounded, color: Colors.white38, size: 48)),
+          ]),
+        ),
+        // ── White info bottom ─────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (c.creatorName != null)
+              Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+            const SizedBox(height: 4),
+            Text(c.title,
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 16, color: txt1, height: 1.3)),
+            const SizedBox(height: 12),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              builder: (_, val, __) => ClipRRect(
                 borderRadius: BorderRadius.circular(6),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: progress),
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutCubic,
-                  builder: (_, val, __) => LinearProgressIndicator(
-                    value: val,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation(AppColors.savanna),
-                    minHeight: 8,
-                  ),
+                child: LinearProgressIndicator(
+                  value: val, minHeight: 8, backgroundColor: border,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.midGreen),
                 ),
               ),
-              const SizedBox(height: 10),
-              // Amounts row
-              Row(children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 16, color: Colors.white)),
-                  Text('of ${kes(c.goal)}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.white60)),
-                ]),
-                const Spacer(),
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text('${c.completionPercentage.toStringAsFixed(0)}%',
-                    style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.savanna)),
-                  Text('${c.daysRemaining}d left',
-                    style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.white60)),
-                ]),
-              ]),
-              const SizedBox(height: 12),
-              // ── DONATE BUTTON inside featured card ──────────────────────────
-              const AnimatedDonateButton(compact: true),
+            ),
+            const SizedBox(height: 10),
+            Row(children: [
+              RichText(text: TextSpan(children: [
+                TextSpan(text: kes(c.amountRaised),
+                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.midGreen)),
+                TextSpan(text: ' / ${kes(c.goal)}',
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+              ])),
+              const Spacer(),
+              Text('${c.completionPercentage.toStringAsFixed(0)}%',
+                style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.savanna)),
             ]),
-          ),
-        ]),
-      ),
+            const SizedBox(height: 6),
+            Text('${c.donorCount} donors · ${c.daysRemaining} days left',
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+            const SizedBox(height: 14),
+            const SizedBox(width: double.infinity, child: _AnimatedDonateButton()),
+          ]),
+        ),
+      ]),
     );
   }
 
-  Widget _gradientBg(List<Color> colors) => Container(
-    decoration: BoxDecoration(gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight)));
+  Widget _gradBg() => Container(
+    decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight)));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CAMPAIGN LIST CARD  —  donate button INSIDE the card
+// ACTIVE CAMPAIGN CARD
+// Horizontal: left thumbnail + right info, progress + donate button inside
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _CampaignCard extends StatelessWidget {
+class _ActiveCampaignCard extends StatelessWidget {
   final Campaign c;
   final bool isDark;
   final Color surface, border, txt1, txt2, txtHint;
   final String Function(double) kes;
-  const _CampaignCard({required this.c, required this.isDark, required this.surface,
+  const _ActiveCampaignCard({required this.c, required this.isDark, required this.surface,
     required this.border, required this.txt1, required this.txt2, required this.txtHint, required this.kes});
 
   @override
@@ -1122,132 +987,118 @@ class _CampaignCard extends StatelessWidget {
     final barColor = urgent ? c.urgencyColor : AppColors.midGreen;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: urgent ? c.urgencyColor.withOpacity(0.35) : border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.25 : 0.05), blurRadius: 14, offset: const Offset(0,4))],
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: urgent ? c.urgencyColor.withOpacity(0.30) : border, width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.22 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Top accent strip
-          Container(height: 4,
-            decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient))),
-
-          // Campaign image
-          if (c.featuredImage != null)
-            SizedBox(height: 130, width: double.infinity,
-              child: Image.network(c.featuredImage!, fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) => progress == null ? child
-                    : Container(height: 130, color: AppColors.midGreen.withOpacity(0.08)),
-                errorBuilder: (_, __, ___) => Container(height: 70,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient.map((e) => e.withOpacity(0.15)).toList()))))),
-
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Title + category pill + tier medal
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.titleSm(txt1))),
-                const SizedBox(width: 8),
-                // Category pill
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: c.categoryGradient[0].withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(c.category, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w700, color: c.categoryGradient[0])),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Thumbnail + medal badge
+            Stack(clipBehavior: Clip.none, children: [
+              Container(
+                width: 80, height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
                 ),
-                // Tier medal next to pill
-                if (c.tier != CampaignTier.none) ...[
-                  const SizedBox(width: 6),
-                  TierMedalBadge(tier: c.tier, size: 26),
-                ],
-              ]),
-
-              // Creator
-              if (c.creatorName != null) ...[
-                const SizedBox(height: 6),
+                child: c.featuredImage != null
+                    ? ClipRRect(borderRadius: BorderRadius.circular(14),
+                        child: Image.network(c.featuredImage!, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _thumbIcon()))
+                    : _thumbIcon(),
+              ),
+              if (c.tier != CampaignTier.none)
+                Positioned(bottom: -6, left: -4,
+                  child: TierMedalBadge(tier: c.tier, size: 24)),
+            ]),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Category + urgency pills
                 Row(children: [
-                  Icon(Icons.person_outline_rounded, size: 12, color: txtHint),
-                  const SizedBox(width: 4),
-                  Text('by ${c.creatorName}', style: AppTextStyles.caption(txtHint)),
-                ]),
-              ],
-
-              const SizedBox(height: 14),
-
-              // Progress bar — animated
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: progress),
-                duration: const Duration(milliseconds: 1000),
-                curve: Curves.easeOutCubic,
-                builder: (_, val, __) => ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: val,
-                    backgroundColor: border,
-                    valueColor: AlwaysStoppedAnimation(barColor),
-                    minHeight: 8,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: c.categoryGradient[0].withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(c.category.toUpperCase(),
+                      style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: c.categoryGradient[0])),
                   ),
+                  if (urgent) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                      decoration: BoxDecoration(color: AppColors.crimson.withOpacity(0.10), borderRadius: BorderRadius.circular(20)),
+                      child: const Text('EMERGENCY',
+                        style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: AppColors.crimson)),
+                    ),
+                  ],
+                ]),
+                const SizedBox(height: 6),
+                Text(c.title,
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: txt1, height: 1.3)),
+                const SizedBox(height: 4),
+                if (c.creatorName != null)
+                  Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+              ]),
+            ),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 950),
+              curve: Curves.easeOutCubic,
+              builder: (_, val, __) => ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: val, minHeight: 7, backgroundColor: border,
+                  valueColor: AlwaysStoppedAnimation(barColor),
                 ),
               ),
-
-              const SizedBox(height: 10),
-
-              // Raised / days
-              Row(children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.forestGreen)),
-                  Text('of ${kes(c.goal)}', style: AppTextStyles.caption(txt2)),
-                ]),
-                const Spacer(),
-                _urgencyBadge(urgent),
-              ]),
-
-              const SizedBox(height: 8),
-
-              // Donors + percentage
-              Row(children: [
-                Icon(Icons.people_outline_rounded, size: 13, color: txtHint),
-                const SizedBox(width: 4),
-                Text('${c.donorCount} donors', style: AppTextStyles.caption(txtHint)),
-                const Spacer(),
-                Text('${c.completionPercentage.toStringAsFixed(0)}% funded',
-                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.midGreen)),
-              ]),
-
-              const SizedBox(height: 14),
-
-              // ── DONATE BUTTON — inside the card, not a separate strip ───────
-              const SizedBox(width: double.infinity, child: AnimatedDonateButton()),
+            ),
+            const SizedBox(height: 10),
+            Row(children: [
+              RichText(text: TextSpan(children: [
+                TextSpan(text: kes(c.amountRaised),
+                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.midGreen)),
+                TextSpan(text: ' / ${kes(c.goal)}',
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+              ])),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: urgent ? AppColors.crimson.withOpacity(0.10) : border.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: urgent ? AppColors.crimson.withOpacity(0.25) : Colors.transparent),
+                ),
+                child: Text('${c.daysRemaining}d left',
+                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 11,
+                    color: urgent ? AppColors.crimson : txtHint)),
+              ),
             ]),
-          ),
-        ]),
-      ),
+            const SizedBox(height: 6),
+            Text('${c.donorCount} donors · ${c.completionPercentage.toStringAsFixed(0)}% funded',
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+            const SizedBox(height: 14),
+            const SizedBox(width: double.infinity, child: _AnimatedDonateButton()),
+          ]),
+        ),
+      ]),
     );
   }
 
-  Widget _urgencyBadge(bool urgent) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: urgent ? c.urgencyColor.withOpacity(0.1) : AppColors.cloud.withOpacity(0.5),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: urgent ? c.urgencyColor.withOpacity(0.3) : Colors.transparent),
-    ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(urgent ? Icons.local_fire_department_rounded : Icons.schedule_rounded,
-        size: 12, color: urgent ? c.urgencyColor : AppColors.mist),
-      const SizedBox(width: 4),
-      Text('${c.daysRemaining}d left',
-        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, fontWeight: FontWeight.w700,
-          color: urgent ? c.urgencyColor : AppColors.mist)),
-    ]),
-  );
+  Widget _thumbIcon() => Center(child: Icon(c.categoryIcon, color: Colors.white.withOpacity(0.85), size: 32));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1267,43 +1118,50 @@ class _SearchCard extends StatelessWidget {
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: border)),
     child: Row(children: [
-      Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 50, height: 50,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: c.categoryGradient),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(child: Text(_emoji(c.category), style: const TextStyle(fontSize: 22))),
-          ),
-          if (c.tier != CampaignTier.none)
-            Positioned(bottom: -6, right: -6,
-              child: TierMedalBadge(tier: c.tier, size: 20)),
-        ],
-      ),
-      const SizedBox(width: 14),
+      Stack(clipBehavior: Clip.none, children: [
+        Container(
+          width: 50, height: 50,
+          decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient), borderRadius: BorderRadius.circular(12)),
+          child: Center(child: Icon(c.categoryIcon, color: Colors.white, size: 24)),
+        ),
+        if (c.tier != CampaignTier.none)
+          Positioned(bottom: -5, right: -5, child: TierMedalBadge(tier: c.tier, size: 20)),
+      ]),
+      const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(c.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.titleSm(txt1)),
+        Text(c.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 14, color: txt1)),
         const SizedBox(height: 3),
-        Text(c.category, style: AppTextStyles.caption(AppColors.midGreen)),
+        Text(c.category, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.midGreen)),
       ])),
       const SizedBox(width: 10),
-      Text(kes(c.goal), style: AppTextStyles.mono(AppColors.forestGreen)),
+      Text(kes(c.goal), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.forestGreen)),
     ]),
   );
+}
 
-  String _emoji(String cat) {
-    switch (cat.toLowerCase()) {
-      case 'medical':     return '🏥';
-      case 'education':   return '📚';
-      case 'water':       return '💧';
-      case 'emergencies': return '🚨';
-      case 'community':   return '🤝';
-      case 'environment': return '🌿';
-      default:            return '🌍';
-    }
+// ═══════════════════════════════════════════════════════════════════════════════
+// STAGGER ANIMATION WRAPPER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _StaggerItem extends StatelessWidget {
+  final int index;
+  final AnimationController ctrl;
+  final Widget child;
+  const _StaggerItem({required this.index, required this.ctrl, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final start = (index * 0.10).clamp(0.0, 0.75);
+    final end   = (start + 0.38).clamp(0.0, 1.0);
+    final anim  = CurvedAnimation(parent: ctrl, curve: Interval(start, end, curve: Curves.easeOutCubic));
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (_, __) => Opacity(
+        opacity: anim.value,
+        child: Transform.translate(offset: Offset(0, 20 * (1 - anim.value)), child: child),
+      ),
+    );
   }
 }
 
@@ -1318,23 +1176,17 @@ class _SkeletonCard extends StatefulWidget {
 }
 
 class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderStateMixin {
-  late AnimationController _ac;
-  late Animation<double> _anim;
-  @override void initState() {
-    super.initState();
-    _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
-  }
+  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
+  late final Animation<double> _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
   @override void dispose() { _ac.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _anim,
     builder: (_, __) => Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      height: 160,
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14), height: 120,
       decoration: BoxDecoration(
-        color: widget.surface.withOpacity(0.4 + _anim.value * 0.4),
-        borderRadius: BorderRadius.circular(20),
+        color: widget.surface.withOpacity(0.5 + _anim.value * 0.35),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: widget.border),
       ),
     ),
@@ -1342,104 +1194,102 @@ class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderS
 }
 
 class _ShimmerBox extends StatefulWidget {
-  final double w, h, radius;
-  final Color surface, border;
-  const _ShimmerBox({required this.w, required this.h, required this.radius, required this.surface, required this.border});
+  final double w, h, r;
+  final Color surface;
+  const _ShimmerBox({required this.w, required this.h, required this.r, required this.surface});
   @override State<_ShimmerBox> createState() => _ShimmerBoxState();
 }
 
 class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderStateMixin {
-  late AnimationController _ac;
-  late Animation<double> _anim;
-  @override void initState() {
-    super.initState();
-    _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
-  }
+  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
+  late final Animation<double> _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
   @override void dispose() { _ac.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: _anim,
     builder: (_, __) => Container(
-      width: widget.w, height: widget.h,
-      margin: const EdgeInsets.only(right: 12),
+      width: widget.w, height: widget.h, margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
-        color: widget.surface.withOpacity(0.4 + _anim.value * 0.4),
-        borderRadius: BorderRadius.circular(widget.radius),
-        border: Border.all(color: widget.border),
+        color: widget.surface.withOpacity(0.5 + _anim.value * 0.35),
+        borderRadius: BorderRadius.circular(widget.r),
       ),
     ),
   );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SMALL SHARED WIDGETS
+// SHARED SMALL WIDGETS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-class _IconBtn extends StatelessWidget {
+class _RoundedIconBtn extends StatelessWidget {
   final IconData icon;
   final Color surface, border, iconColor;
   final VoidCallback onTap;
-  const _IconBtn({required this.icon, required this.surface, required this.border, required this.iconColor, required this.onTap});
+  const _RoundedIconBtn({required this.icon, required this.surface, required this.border, required this.iconColor, required this.onTap});
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
+    child: Container(
       width: 42, height: 42,
-      decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: border)),
+      decoration: BoxDecoration(
+        color: surface, borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border, width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
       child: Icon(icon, color: iconColor, size: 20),
     ),
   );
 }
 
-class _Pill extends StatelessWidget {
+class _BadgePill extends StatelessWidget {
   final String label;
   final Color bg;
-  const _Pill({required this.label, required this.bg});
+  const _BadgePill({required this.label, required this.bg});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
     decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-    child: Text(label, style: const TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+    child: Text(label, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 11, color: Colors.white, letterSpacing: 0.2)),
   );
 }
 
-class _StatChip extends StatelessWidget {
-  final String icon, label, value;
-  const _StatChip({required this.icon, required this.label, required this.value});
+class _StatCard extends StatelessWidget {
+  final String value, label;
+  final Color surface, border, txt1, txt2;
+  const _StatCard({required this.value, required this.label, required this.surface, required this.border, required this.txt1, required this.txt2});
   @override
   Widget build(BuildContext context) => Expanded(
-    child: Column(children: [
-      Text(icon, style: const TextStyle(fontSize: 16)),
-      const SizedBox(height: 4),
-      Text(value, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 15, color: Colors.white)),
-      Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, color: Colors.white.withOpacity(0.75), fontWeight: FontWeight.w500)),
-    ]),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: surface, borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: border, width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(children: [
+        Text(value, style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 17, color: txt1, letterSpacing: -0.3)),
+        const SizedBox(height: 3),
+        Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: txt2, fontWeight: FontWeight.w500)),
+      ]),
+    ),
   );
 }
 
-class _Vline extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(width: 1, height: 42, color: Colors.white.withOpacity(0.2));
-}
-
-class _NavBtn extends StatelessWidget {
+class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final int idx, cur;
   final Color txt2;
   final void Function(int) onTap;
-  const _NavBtn({required this.icon, required this.label, required this.idx, required this.cur, required this.txt2, required this.onTap});
+  const _NavItem({required this.icon, required this.label, required this.idx, required this.cur, required this.txt2, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final active = idx == cur;
     return GestureDetector(
       onTap: () => onTap(idx),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),

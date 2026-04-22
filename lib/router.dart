@@ -4,9 +4,13 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/otp_screen.dart';
 import 'features/home/screens/home_screen.dart';
 
+import 'features//campaign/screens/create_campaign.dart';
+
 final appRouter = GoRouter(
   initialLocation: '/onboarding',
   routes: [
+
+    //Auth routes
     GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
     GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
     GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
@@ -19,6 +23,9 @@ final appRouter = GoRouter(
         builder: (ctx, state) => OtpScreen(phone: state.extra as String)),
     GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
     GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
-    // More routes added as we build each screen
+
+    //campaign routes
+    GoRoute(path: '/start-campaign', builder: (_, __) => const CreateCampaignScreen()),
+    
   ],
 );
