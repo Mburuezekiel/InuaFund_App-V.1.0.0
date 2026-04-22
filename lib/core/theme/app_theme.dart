@@ -23,9 +23,6 @@ class AppTheme {
 
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
-
-      background: AppColors.background,
-      onBackground: AppColors.textPrimary,
     ),
 
     fontFamily: 'Poppins',

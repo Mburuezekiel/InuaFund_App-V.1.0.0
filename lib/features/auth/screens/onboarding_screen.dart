@@ -64,7 +64,7 @@ final _slides = <_Slide>[
     tag: 'COMMUNITY', title: 'Pamoja', accent: 'Tunaweza',
     subtitle: 'Join a growing community of Kenyans making a real difference '
         'in their neighbourhoods every single day.',
-    imagePath: 'assets/images/inuafundCover.png',
+    imagePath: 'assets/images/crowdfunding.jpeg',
     cta: 'Get Started',
     illustration: const _CommunityIllustration(),
     whiteBackground: true,   // ← white background on slide 3
@@ -155,17 +155,20 @@ class _State extends State<OnboardingScreen> with SingleTickerProviderStateMixin
                 colors: [_C.green.withOpacity(0.14), Colors.transparent]))),
           ),
 
-        // ── UI ────────────────────────────────────────────────────────────
-        SafeArea(child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [_Logo(darkMode: !isWhiteBg), _SkipBtn(onTap: () => context.go('/login'), darkMode: !isWhiteBg)],
+        // ── Floating Skip button ──────────────────────────────────────────
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 14, 20, 0),
+              child: _SkipBtn(onTap: () => context.go('/login'), darkMode: !isWhiteBg),
             ),
           ),
+        ),
 
-          // Illustration / image area (swipeable)
+        // ── Main UI column ────────────────────────────────────────────────
+        SafeArea(child: Column(children: [
+          // Illustration / image area — edge-to-edge, blends into card below
           Expanded(
             flex: 5,
             child: PageView(
@@ -177,12 +180,11 @@ class _State extends State<OnboardingScreen> with SingleTickerProviderStateMixin
             ),
           ),
 
-          // Glass card
+          // Bottom card — no border, seamless join
           Container(
-            decoration: BoxDecoration(
-              color: const Color(0xEA061409),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-              border: Border(top: BorderSide(color: _C.border)),
+            decoration: const BoxDecoration(
+              color: Color(0xEA061409),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             ),
             padding: const EdgeInsets.fromLTRB(28, 26, 28, 0),
             child: FadeTransition(
@@ -239,59 +241,62 @@ class _SlideVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content;
-
+    // If there's an image: fill the full viewport width & height,
+    // then overlay a bottom-fade so it melts into the dark card below.
     if (slide.imagePath != null) {
-      content = ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Image.asset(slide.imagePath!, fit: BoxFit.cover),
-      );
-    } else {
-      content = slide.illustration;
-    }
-
-    if (slide.whiteBackground) {
-      // Wrap in a clean white elevated card with subtle green border accent
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: _C.green.withOpacity(0.10),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image fills the entire slot — no padding, no radius, no border
+          Image.asset(
+            slide.imagePath!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+          // Bottom gradient — fades image into the card background colour
+          Positioned(
+            left: 0, right: 0, bottom: 0,
+            child: Container(
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    // match the glass card colour so the join is invisible
+                    const Color(0xFF061409).withOpacity(0.92),
+                  ],
+                ),
               ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(
-              color: _C.green.withOpacity(0.18),
-              width: 1.2,
             ),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: slide.imagePath != null
-              ? Image.asset(slide.imagePath!, fit: BoxFit.cover,
-                  width: double.infinity, height: double.infinity)
-              : Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: slide.illustration,
+          // Top fade — blends image into the background sky/whitesmoke above
+          Positioned(
+            left: 0, right: 0, top: 0,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    slide.whiteBackground
+                        ? const Color(0xFFF5F5F5)
+                        : Colors.transparent,
+                    Colors.transparent,
+                  ],
                 ),
-        ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
-    // Dark slides: original padding
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-      child: content,
-    );
+    // Illustration fallback (no image) — centred with light padding
+    return Center(child: slide.illustration);
   }
 }
 

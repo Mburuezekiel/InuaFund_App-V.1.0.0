@@ -228,8 +228,8 @@ class _OtpScreenState extends State<OtpScreen> {
 
               // Error message
               if (_hasError)
-                Padding(
-                  padding: const EdgeInsets.only(top: 16),
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
                   child: Center(
                     child: Text(
                       'Incorrect code. Please try again.',

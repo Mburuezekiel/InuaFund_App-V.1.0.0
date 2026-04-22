@@ -296,7 +296,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
                         ],
                       )),
                       const SizedBox(height: 8),
-                      Text('Sign in to continue making a difference',
+                      const Text('Sign in to continue making a difference',
                           style: TextStyle(color: _C.muted, fontSize: 14, fontFamily: 'Poppins')),
                     ]),
                   ),
@@ -354,7 +354,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
                                   onChanged: (v) => setState(() => _remember = v ?? false),
                                 ),
                                 const SizedBox(width: 8),
-                                Text('Remember me',
+                                const Text('Remember me',
                                     style: TextStyle(color: _C.muted, fontSize: 12,
                                         fontFamily: 'Poppins')),
                               ]),
@@ -393,7 +393,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
                 FadeTransition(
                   opacity: _fade,
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text("Don't have an account? ",
+                    const Text("Don't have an account? ",
                         style: TextStyle(color: _C.muted, fontSize: 13, fontFamily: 'Poppins')),
                     GestureDetector(
                       onTap: () => context.push('/register'),
@@ -620,7 +620,7 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: Colors.white.withOpacity(0.12)),
                         ),
-                        child: Text('Sign In',
+                        child: const Text('Sign In',
                             style: TextStyle(color: _C.muted, fontSize: 13,
                                 fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
                       ),
@@ -661,7 +661,7 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
                 FadeTransition(
                   opacity: _fade,
                   child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Text('Already have an account? ',
+                    const Text('Already have an account? ',
                         style: TextStyle(color: _C.muted, fontSize: 13, fontFamily: 'Poppins')),
                     GestureDetector(
                       onTap: () => context.push('/login'),
@@ -794,8 +794,9 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
         keyboardType: TextInputType.phone, enabled: !_busy,
         validator: (v) {
           if (v == null || v.isEmpty) return 'Phone number is required';
-          if (!RegExp(r'^\+?[0-9\s\-()]{7,20}$').hasMatch(v))
+          if (!RegExp(r'^\+?[0-9\s\-()]{7,20}$').hasMatch(v)) {
             return 'Invalid phone number format';
+          }
           return null;
         },
       ),
@@ -948,9 +949,9 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white.withOpacity(0.12)),
                       ),
-                      child: Row(children: [
-                        const Icon(Icons.arrow_back_rounded, color: _C.muted, size: 16),
-                        const SizedBox(width: 6),
+                      child: const Row(children: [
+                        Icon(Icons.arrow_back_rounded, color: _C.muted, size: 16),
+                        SizedBox(width: 6),
                         Text('Back to Login',
                             style: TextStyle(color: _C.muted, fontSize: 13,
                                 fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
@@ -1001,7 +1002,7 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
                             ? 'Check your email for reset instructions'
                             : 'Enter your email to receive password\nreset instructions',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: _C.muted, fontSize: 14,
+                        style: const TextStyle(color: _C.muted, fontSize: 14,
                             fontFamily: 'Poppins', height: 1.6),
                       ),
                     ]),
@@ -1028,9 +1029,9 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: Colors.white.withOpacity(0.08)),
                     ),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Icon(Icons.shield_outlined, color: _C.muted, size: 16),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'For security reasons, we only send reset instructions to registered email addresses.',
@@ -1067,8 +1068,9 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
           validator: (v) {
             if (!_attempted) return null;
             if (v == null || v.isEmpty) return 'Email is required';
-            if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v))
+            if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v)) {
               return 'Please enter a valid email address';
+            }
             return null;
           },
         ),
@@ -1079,9 +1081,9 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
           alignment: Alignment.centerRight,
           child: GestureDetector(
             onTap: () => context.push('/help'),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.help_outline_rounded, color: _C.muted, size: 15),
-              const SizedBox(width: 5),
+              SizedBox(width: 5),
               Text('Need help?', style: TextStyle(
                   color: _C.muted, fontSize: 12, fontFamily: 'Poppins')),
             ]),
@@ -1111,7 +1113,7 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
           border: Border.all(color: _C.success.withOpacity(0.30)),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(Icons.check_circle_outline_rounded, color: _C.success, size: 20),
+          const Icon(Icons.check_circle_outline_rounded, color: _C.success, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: RichText(text: TextSpan(
@@ -1236,7 +1238,7 @@ class _InputField extends StatelessWidget {
     validator: validator,
     decoration: InputDecoration(
       hintText:  hint,
-      hintStyle: TextStyle(color: _C.muted, fontFamily: 'Poppins', fontSize: 14),
+      hintStyle: const TextStyle(color: _C.muted, fontFamily: 'Poppins', fontSize: 14),
       prefixIcon: Icon(icon, color: _C.muted, size: 20),
       suffixIcon: suffixIcon,
       filled:    true,
@@ -1244,10 +1246,10 @@ class _InputField extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _C.inputBorder)),
+          borderSide: const BorderSide(color: _C.inputBorder)),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _C.inputBorder)),
+          borderSide: const BorderSide(color: _C.inputBorder)),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: _C.green, width: 1.5)),
@@ -1279,15 +1281,15 @@ class _CountyDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
-    value: selected.isEmpty ? null : selected,
+    initialValue: selected.isEmpty ? null : selected,
     onChanged: enabled ? onChanged : null,
     validator: validator,
     dropdownColor: const Color(0xFF0E1F14),
     icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _C.muted),
     style: const TextStyle(color: Colors.white, fontFamily: 'Poppins', fontSize: 14),
-    hint: Row(children: [
-      const Icon(Icons.location_on_outlined, color: _C.muted, size: 20),
-      const SizedBox(width: 12),
+    hint: const Row(children: [
+      Icon(Icons.location_on_outlined, color: _C.muted, size: 20),
+      SizedBox(width: 12),
       Text('Select County',
           style: TextStyle(color: _C.muted, fontFamily: 'Poppins', fontSize: 14)),
     ]),
@@ -1296,9 +1298,9 @@ class _CountyDropdown extends StatelessWidget {
       fillColor: _C.inputBg,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _C.inputBorder)),
+          borderSide: const BorderSide(color: _C.inputBorder)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: _C.inputBorder)),
+          borderSide: const BorderSide(color: _C.inputBorder)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: _C.green, width: 1.5)),
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
@@ -1430,8 +1432,8 @@ class _OrDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(children: [
     Expanded(child: Divider(color: Colors.white.withOpacity(0.12), height: 1)),
-    Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Text('OR', style: TextStyle(
           color: _C.muted, fontSize: 12, fontFamily: 'Poppins',
           fontWeight: FontWeight.w600)),
@@ -1493,7 +1495,7 @@ class _CheckRow extends StatelessWidget {
       Expanded(child: Padding(
         padding: const EdgeInsets.only(top: 2),
         child: RichText(text: TextSpan(
-          style: TextStyle(color: _C.muted, fontSize: 12, fontFamily: 'Poppins'),
+          style: const TextStyle(color: _C.muted, fontSize: 12, fontFamily: 'Poppins'),
           children: [
             TextSpan(text: label),
             if (link != null)
