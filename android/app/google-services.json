@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "805285953379",
+    "project_id": "inua-fund",
+    "storage_bucket": "inua-fund.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:805285953379:android:0e9284c682a7ee15f65d56",
+        "android_client_info": {
+          "package_name": "com.inuafund.inuafund"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "805285953379-sgov57i62v2rodua7ttfbftfhis9u3kn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmkBosZl3Dgw9qYq5a2fLBc7f3JzI-iNc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "805285953379-sgov57i62v2rodua7ttfbftfhis9u3kn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

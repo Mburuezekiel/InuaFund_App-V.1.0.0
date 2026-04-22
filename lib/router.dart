@@ -18,6 +18,7 @@ final appRouter = GoRouter(
         path: '/otp',
         builder: (ctx, state) => OtpScreen(phone: state.extra as String)),
     GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+    GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
     // More routes added as we build each screen
   ],
 );

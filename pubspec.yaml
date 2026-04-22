@@ -1,4 +1,4 @@
-name: inuafund
+name: InuaFund
 description: InuaFund - Crowdfunding for Kenya
 publish_to: 'none'
 version: 1.0.0+1
@@ -26,6 +26,7 @@ dependencies:
   # Auth
   google_sign_in: ^6.2.1
   flutter_secure_storage: ^9.0.0
+  
   
 
   # UI
@@ -62,6 +63,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/icon.png
   fonts:
     - family: Poppins
       fonts:

@@ -35,7 +35,10 @@ class _AuthApi {
     validateStatus: (s) => s != null && s < 500,
   ));
 
-  static final _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  static final _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    clientId: '834391125130-bsmhrlr77l261543fek7a6er66pa6hs4.apps.googleusercontent.com',
+  );
 
   // ── helpers ──────────────────────────────────────────────────────────────
   static Future<void> _persist(Map<String, dynamic> data) async {
@@ -214,7 +217,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
         email:    _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      if (mounted) context.go('/');
+      if (mounted) context.go('/home');
     } on DioException catch (e) {
       setState(() => _error = _AuthApi.parseDioError(e));
     } catch (e) {
@@ -229,7 +232,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
     setState(() { _googleLoading = true; _error = null; });
     try {
       await _AuthApi.googleLogin();
-      if (mounted) context.go('/');
+      if (mounted) context.go('/home');
     } on DioException catch (e) {
       setState(() => _error = _AuthApi.parseDioError(e));
     } catch (e) {
@@ -261,7 +264,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
         const _StarField(),
         Positioned(
           bottom: 0, left: 0, right: 0,
-          child: CustomPaint(size: Size(w, h * 0.30), painter: _CityPainter()),
+          child: CustomPaint(size: Size(w, h * 0.30)),
         ),
         Positioned(
           bottom: h * 0.12, left: 40, right: 40,
@@ -288,7 +291,7 @@ class _LoginState extends State<LoginScreen> with TickerProviderStateMixin {
                         style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
                             fontFamily: 'Poppins', height: 1.15),
                         children: [
-                          TextSpan(text: 'Welcome\n', style: TextStyle(color: Colors.white)),
+                          TextSpan(text: 'Welcome ', style: TextStyle(color: Colors.white)),
                           TextSpan(text: 'Back',      style: TextStyle(color: _C.green)),
                         ],
                       )),
@@ -527,7 +530,7 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
         phoneNumber: _phoneCtrl.text.trim(),
         country:     _selectedCounty,
       );
-      if (mounted) context.go('/');
+      if (mounted) context.go('/home');
     } on DioException catch (e) {
       _handleRegisterError(_AuthApi.parseDioError(e));
     } catch (e) {
@@ -537,12 +540,13 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
     }
   }
 
+
   // ── Google register ───────────────────────────────────────────────────────
   Future<void> _googleRegister() async {
     setState(() { _googleLoading = true; _error = null; });
     try {
       await _AuthApi.googleRegister();
-      if (mounted) context.go('/');
+      if (mounted) context.go('/home');
     } on DioException catch (e) {
       setState(() => _error = _AuthApi.parseDioError(e));
     } catch (e) {
@@ -585,7 +589,7 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
         const _StarField(),
         Positioned(
           bottom: 0, left: 0, right: 0,
-          child: CustomPaint(size: Size(w, h * 0.28), painter: _CityPainter()),
+          child: CustomPaint(size: Size(w, h * 0.28),),
         ),
         Positioned(
           bottom: h * 0.10, left: 40, right: 40,
@@ -632,7 +636,7 @@ class _RegisterState extends State<RegisterScreen> with TickerProviderStateMixin
                       style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900,
                           fontFamily: 'Poppins', height: 1.15),
                       children: [
-                        TextSpan(text: _step == 1 ? 'Create\n' : 'Almost\n',
+                        TextSpan(text: _step == 1 ? 'Create ' : 'Almost ',
                             style: const TextStyle(color: Colors.white)),
                         TextSpan(text: _step == 1 ? 'Account' : 'There!',
                             style: const TextStyle(color: _C.green)),
@@ -916,7 +920,7 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
         const _StarField(),
         Positioned(
           bottom: 0, left: 0, right: 0,
-          child: CustomPaint(size: Size(w, h * 0.28), painter: _CityPainter()),
+          child: CustomPaint(size: Size(w, h * 0.28)),
         ),
         Positioned(
           bottom: h * 0.12, left: 40, right: 40,
@@ -981,7 +985,7 @@ class _ForgotState extends State<ForgotPasswordScreen> with TickerProviderStateM
                             fontFamily: 'Poppins', height: 1.15),
                         children: [
                           TextSpan(
-                            text: _submitted ? 'Check Your\n' : 'Reset\n',
+                            text: _submitted ? 'Check Your ' : 'Reset ',
                             style: const TextStyle(color: Colors.white),
                           ),
                           TextSpan(
@@ -1583,38 +1587,38 @@ class _StarPainter extends CustomPainter {
   @override bool shouldRepaint(_StarPainter o) => o.t != t;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CITY PAINTER
-// ─────────────────────────────────────────────────────────────────────────────
-class _CityPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width; final h = size.height;
-    final rng = Random(99);
-    const bldgs = [
-      [0.00,0.07,0.55],[0.06,0.06,0.65],[0.11,0.05,0.58],[0.15,0.08,0.72],
-      [0.22,0.04,0.60],[0.26,0.09,0.82],[0.34,0.05,0.68],[0.38,0.10,0.88],
-      [0.48,0.06,0.75],[0.53,0.13,0.92],[0.65,0.06,0.70],[0.70,0.10,0.85],
-      [0.79,0.05,0.68],[0.83,0.08,0.60],[0.90,0.10,0.72],
-    ];
-    const cols = [0xFF0E1F14, 0xFF112318, 0xFF133020, 0xFF0D2B1A];
-    for (int i = 0; i < bldgs.length; i++) {
-      final bx = bldgs[i][0]*w; final bw = bldgs[i][1]*w; final bh = bldgs[i][2]*h;
-      canvas.drawRRect(
-        RRect.fromRectAndCorners(Rect.fromLTWH(bx, h-bh, bw, bh),
-            topLeft: const Radius.circular(2), topRight: const Radius.circular(2)),
-        Paint()..color = Color(cols[i % cols.length]),
-      );
-      for (int j = 0; j < 5; j++) {
-        final wx = bx + 3 + rng.nextDouble() * (bw - 8).clamp(0, bw);
-        final wy = (h - bh) + 6 + rng.nextDouble() * bh * 0.7;
-        final wc = j % 3 == 0 ? _C.gold : j % 4 == 0 ? _C.green : Colors.white;
-        canvas.drawRect(Rect.fromLTWH(wx, wy, 4, 6),
-            Paint()..color = wc.withOpacity(0.35 + rng.nextDouble() * 0.3));
-      }
-    }
-    canvas.drawRect(
-        Rect.fromLTWH(0, h-3, w, 3), Paint()..color = const Color(0xFF061409));
-  }
-  @override bool shouldRepaint(_) => false;
-}
+// // ─────────────────────────────────────────────────────────────────────────────
+// // CITY PAINTER
+// // ─────────────────────────────────────────────────────────────────────────────
+// class _CityPainter extends CustomPainter {
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final w = size.width; final h = size.height;
+//     final rng = Random(99);
+//     const bldgs = [
+//       [0.00,0.07,0.55],[0.06,0.06,0.65],[0.11,0.05,0.58],[0.15,0.08,0.72],
+//       [0.22,0.04,0.60],[0.26,0.09,0.82],[0.34,0.05,0.68],[0.38,0.10,0.88],
+//       [0.48,0.06,0.75],[0.53,0.13,0.92],[0.65,0.06,0.70],[0.70,0.10,0.85],
+//       [0.79,0.05,0.68],[0.83,0.08,0.60],[0.90,0.10,0.72],
+//     ];
+//     const cols = [0xFF0E1F14, 0xFF112318, 0xFF133020, 0xFF0D2B1A];
+//     for (int i = 0; i < bldgs.length; i++) {
+//       final bx = bldgs[i][0]*w; final bw = bldgs[i][1]*w; final bh = bldgs[i][2]*h;
+//       canvas.drawRRect(
+//         RRect.fromRectAndCorners(Rect.fromLTWH(bx, h-bh, bw, bh),
+//             topLeft: const Radius.circular(2), topRight: const Radius.circular(2)),
+//         Paint()..color = Color(cols[i % cols.length]),
+//       );
+//       for (int j = 0; j < 5; j++) {
+//         final wx = bx + 3 + rng.nextDouble() * (bw - 8).clamp(0, bw);
+//         final wy = (h - bh) + 6 + rng.nextDouble() * bh * 0.7;
+//         final wc = j % 3 == 0 ? _C.gold : j % 4 == 0 ? _C.green : Colors.white;
+//         canvas.drawRect(Rect.fromLTWH(wx, wy, 4, 6),
+//             Paint()..color = wc.withOpacity(0.35 + rng.nextDouble() * 0.3));
+//       }
+//     }
+//     canvas.drawRect(
+//         Rect.fromLTWH(0, h-3, w, 3), Paint()..color = const Color(0xFF061409));
+//   }
+//   @override bool shouldRepaint(_) => false;
+// }
