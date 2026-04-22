@@ -1157,10 +1157,17 @@ class _Logo extends StatelessWidget {
       width: 33, height: 33,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(9),
-        gradient: const LinearGradient(colors: [_C.green, _C.greenDark]),
         boxShadow: [BoxShadow(color: _C.green.withOpacity(0.45), blurRadius: 12)],
       ),
-      child: const Center(child: Text('🌱', style: TextStyle(fontSize: 17))),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: Image.asset(
+          'assets/icon.png',
+          width: 33,
+          height: 33,
+          fit: BoxFit.cover,
+        ),
+      ),
     ),
     const SizedBox(width: 8),
     RichText(text: const TextSpan(
@@ -1172,7 +1179,6 @@ class _Logo extends StatelessWidget {
     )),
   ]);
 }
-
 // Glass container reused on all three screens
 class _GlassCard extends StatelessWidget {
   final Widget child;

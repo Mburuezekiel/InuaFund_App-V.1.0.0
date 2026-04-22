@@ -50,7 +50,7 @@ final _slides = <_Slide>[
     illustration: const _CoinsIllustration(),
   ),
   _Slide(
-    tag: 'PAYMENTS', title: 'Donate Fast &', accent: 'Securely',
+    tag: 'DONATIONS', title: 'Donate Fast &', accent: 'Securely',
     subtitle: 'Donate via M-Pesa, Airtel Money, credit/debit card and more. '
         'Every shilling reaches the right person — instantly & safely.',
     cta: 'Continue',
@@ -63,7 +63,7 @@ final _slides = <_Slide>[
     tag: 'COMMUNITY', title: 'Pamoja', accent: 'Tunaweza',
     subtitle: 'Join a growing community of Kenyans making a real difference '
         'in their neighbourhoods every single day.',
-        imagePath: 'assets/images/crowdfunding.jpeg',
+        imagePath: 'assets/images/inuafundCover.png',
     cta: 'Get Started',
     illustration: const _CommunityIllustration(),
   ),
@@ -243,10 +243,17 @@ class _Logo extends StatelessWidget {
       width: 33, height: 33,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(9),
-        gradient: const LinearGradient(colors: [_C.green, _C.greenDark]),
         boxShadow: [BoxShadow(color: _C.green.withOpacity(0.45), blurRadius: 12)],
       ),
-      child: const Center(child: Text('🌱', style: TextStyle(fontSize: 17))),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: Image.asset(
+          'assets/icon.png',
+          width: 33,
+          height: 33,
+          fit: BoxFit.cover,
+        ),
+      ),
     ),
     const SizedBox(width: 8),
     RichText(text: const TextSpan(
