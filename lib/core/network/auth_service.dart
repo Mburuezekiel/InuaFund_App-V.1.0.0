@@ -238,12 +238,13 @@ class AuthService {
     final email     = await storage.read(key: 'email')     ?? '';
     final fullName  = await storage.read(key: 'fullName')  ?? '';
     final role      = await storage.read(key: 'role')      ?? 'user';
+    final phoneNumber = await storage.read(key: 'phoneNumber') ?? '';
 
     if (token == null || token.isEmpty) return AuthState.empty;
 
     final user = UserModel(
       id: id, username: username, email: email,
-      fullName: fullName, phoneNumber: '', token: token, role: role,
+      fullName: fullName, phoneNumber: phoneNumber, token: token, role: role,
     );
     return AuthState(token: token, user: user, isAuthenticated: true);
   } catch (_) {

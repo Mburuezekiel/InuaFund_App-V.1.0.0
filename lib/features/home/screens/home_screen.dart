@@ -1,9 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// home_screen.dart
-// Full HomeScreen — nav items wired, FAB navigates to StartCampaignScreen,
-// auth token/user passed from AuthProvider
+// home_screen.dart  — updated
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,30 +10,27 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
-
 import '../../../../core/network/auth_service.dart';
 import '../../campaign/screens/create_campaign.dart';
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// THEME
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Colors ──────────────────────────────────────────────────────────────────
 
 class AppColors {
-  static const forestGreen  = Color(0xFF0B5E35);
-  static const midGreen     = Color(0xFF1A8C52);
-  static const limeGreen    = Color(0xFF4CC97A);
-  static const savanna      = Color(0xFFE8A020);
-  static const crimson      = Color(0xFFD93025);
-  static const amber        = Color(0xFFE8860A);
-  static const ink          = Color(0xFF0D0D0D);
-  static const mist         = Color(0xFF8FA896);
-  static const cloud        = Color(0xFFEEEEEE);
-  static const snow         = Color(0xFFF7F7F7);
-  static const white        = Color(0xFFFFFFFF);
-  static const darkBg       = Color(0xFF060E09);
-  static const darkCard     = Color(0xFF0D1A11);
-  static const darkBorder   = Color(0xFF1C2E22);
-  static const darkMist     = Color(0xFF4D6657);
+  static const forestGreen = Color(0xFF0B5E35);
+  static const midGreen    = Color(0xFF1A8C52);
+  static const limeGreen   = Color(0xFF4CC97A);
+  static const savanna     = Color(0xFFE8A020);
+  static const crimson     = Color(0xFFD93025);
+  static const amber       = Color(0xFFE8860A);
+  static const ink         = Color(0xFF0D0D0D);
+  static const cloud       = Color(0xFFEEEEEE);
+  static const snow        = Color(0xFFF4F6F4);
+  static const white       = Color(0xFFFFFFFF);
+  static const darkBg      = Color(0xFF060E09);
+  static const darkCard    = Color(0xFF0D1A11);
+  static const darkBorder  = Color(0xFF1C2E22);
+  static const darkMist    = Color(0xFF4D6657);
+  static const mist        = Color(0xFF8FA896);
 
   static const tierGold1   = Color(0xFFFFD700);
   static const tierGold2   = Color(0xFFFFA500);
@@ -44,113 +40,72 @@ class AppColors {
   static const tierBronze2 = Color(0xFFA0522D);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TIER
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Tier ────────────────────────────────────────────────────────────────────
 
 enum CampaignTier { gold, silver, bronze, none }
 
 extension CampaignTierExt on CampaignTier {
-  List<Color> get colors {
-    switch (this) {
-      case CampaignTier.gold:   return [AppColors.tierGold1, AppColors.tierGold2];
-      case CampaignTier.silver: return [AppColors.tierSilver1, AppColors.tierSilver2];
-      case CampaignTier.bronze: return [AppColors.tierBronze1, AppColors.tierBronze2];
-      case CampaignTier.none:   return [];
-    }
-  }
-  Color get glowColor {
-    switch (this) {
-      case CampaignTier.gold:   return const Color(0xAAFFA500);
-      case CampaignTier.silver: return const Color(0x88B0B0B0);
-      case CampaignTier.bronze: return const Color(0x88A0522D);
-      case CampaignTier.none:   return Colors.transparent;
-    }
-  }
-  static CampaignTier fromMomentum(double score) {
-    if (score >= 8.0) return CampaignTier.gold;
-    if (score >= 6.0) return CampaignTier.silver;
-    if (score >= 3.5) return CampaignTier.bronze;
-    return CampaignTier.none;
-  }
+  List<Color> get colors => switch (this) {
+    CampaignTier.gold   => [AppColors.tierGold1, AppColors.tierGold2],
+    CampaignTier.silver => [AppColors.tierSilver1, AppColors.tierSilver2],
+    CampaignTier.bronze => [AppColors.tierBronze1, AppColors.tierBronze2],
+    CampaignTier.none   => [],
+  };
+  Color get glowColor => switch (this) {
+    CampaignTier.gold   => const Color(0xAAFFA500),
+    CampaignTier.silver => const Color(0x88B0B0B0),
+    CampaignTier.bronze => const Color(0x88A0522D),
+    CampaignTier.none   => Colors.transparent,
+  };
+  static CampaignTier fromMomentum(double s) =>
+    s >= 8.0 ? CampaignTier.gold : s >= 6.0 ? CampaignTier.silver : s >= 3.5 ? CampaignTier.bronze : CampaignTier.none;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CROWN + RIBBON MEDAL
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Medal Badge ─────────────────────────────────────────────────────────────
 
 class TierMedalBadge extends StatelessWidget {
   final CampaignTier tier;
   final double size;
-  const TierMedalBadge({super.key, required this.tier, this.size = 36});
+  const TierMedalBadge({super.key, required this.tier, this.size = 28});
 
   @override
   Widget build(BuildContext context) {
     if (tier == CampaignTier.none) return const SizedBox.shrink();
-    final colors = tier.colors;
-    final glow   = tier.glowColor;
-    return Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(
-        width: size, height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-          boxShadow: [BoxShadow(color: glow, blurRadius: 10, spreadRadius: 1, offset: const Offset(0, 3))],
-        ),
-        child: Center(child: CustomPaint(size: Size(size * 0.54, size * 0.40), painter: _CrownPainter())),
+    final c = tier.colors;
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(colors: c, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        boxShadow: [BoxShadow(color: tier.glowColor, blurRadius: 8, spreadRadius: 1)],
       ),
-      Transform.translate(
-        offset: const Offset(0, -2),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _Strip(w: size * 0.26, h: size * 0.42, color: colors[0]),
-          const SizedBox(width: 2),
-          _Strip(w: size * 0.26, h: size * 0.42, color: colors[1]),
-        ]),
-      ),
-    ]);
+      child: Center(child: CustomPaint(size: Size(size * 0.5, size * 0.38), painter: _CrownPainter())),
+    );
   }
-}
-
-class _Strip extends StatelessWidget {
-  final double w, h; final Color color;
-  const _Strip({required this.w, required this.h, required this.color});
-  @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.only(bottomLeft: Radius.circular(w * 0.45), bottomRight: Radius.circular(w * 0.45)),
-    child: Container(width: w, height: h, color: color),
-  );
 }
 
 class _CrownPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.white.withOpacity(0.93)..style = PaintingStyle.fill;
+    final p = Paint()..color = Colors.white.withOpacity(0.93)..style = PaintingStyle.fill;
     final w = size.width; final h = size.height;
-    final path = Path()
+    canvas.drawPath(Path()
       ..moveTo(0, h)..lineTo(w, h)
       ..lineTo(w, h * 0.52)..lineTo(w * 0.78, 0)
       ..lineTo(w * 0.60, h * 0.46)..lineTo(w * 0.50, 0)
       ..lineTo(w * 0.40, h * 0.46)..lineTo(w * 0.22, 0)
-      ..lineTo(0, h * 0.52)..close();
-    canvas.drawPath(path, paint);
-    final gem = Paint()..color = Colors.white.withOpacity(0.45)..style = PaintingStyle.fill;
-    for (final dx in [w * 0.22, w * 0.50, w * 0.78]) {
-      canvas.drawCircle(Offset(dx, w * 0.07 * 0.9), w * 0.07, gem);
-    }
+      ..lineTo(0, h * 0.52)..close(), p);
   }
-  @override bool shouldRepaint(covariant CustomPainter old) => false;
+  @override bool shouldRepaint(covariant CustomPainter _) => false;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MODEL
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Model ───────────────────────────────────────────────────────────────────
 
 class Campaign {
-  final String id, title, description, category;
+  final String id, title, description, category, urgencyLevel;
   final double amountRaised, goal, completionPercentage, momentumScore;
   final int daysRemaining, donorCount;
   final String? featuredImage, creatorName;
-  final String urgencyLevel;
 
   const Campaign({
     required this.id, required this.title, required this.description,
@@ -162,13 +117,39 @@ class Campaign {
 
   CampaignTier get tier => CampaignTierExt.fromMomentum(momentumScore);
 
+  Color get urgencyColor => switch (urgencyLevel) {
+    'high'   => AppColors.crimson,
+    'medium' => AppColors.amber,
+    _        => AppColors.midGreen,
+  };
+
+  List<Color> get gradient => switch (category.toLowerCase()) {
+    'medical'     => [const Color(0xFF0B5E35), const Color(0xFF1A8C52)],
+    'education'   => [const Color(0xFF1565C0), const Color(0xFF1877C5)],
+    'emergencies' => [const Color(0xFFB71C1C), const Color(0xFFD93025)],
+    'water'       => [const Color(0xFF006064), const Color(0xFF00838F)],
+    'environment' => [const Color(0xFF1B5E20), const Color(0xFF2E7D32)],
+    'community'   => [const Color(0xFF4A148C), const Color(0xFF6A1B9A)],
+    _             => [AppColors.forestGreen, AppColors.midGreen],
+  };
+
+  IconData get icon => switch (category.toLowerCase()) {
+    'medical'     => Icons.favorite_rounded,
+    'education'   => Icons.school_rounded,
+    'emergencies' => Icons.warning_amber_rounded,
+    'water'       => Icons.water_drop_rounded,
+    'environment' => Icons.eco_rounded,
+    'community'   => Icons.people_rounded,
+    _             => Icons.volunteer_activism_rounded,
+  };
+
   factory Campaign.fromJson(Map<String, dynamic> j) {
     double n(dynamic v) {
       if (v == null) return 0;
       if (v is num) return v.toDouble();
       if (v is Map) {
-        if (v['\$numberInt']    != null) return double.parse(v['\$numberInt'].toString());
-        if (v['\$numberDouble'] != null) return double.parse(v['\$numberDouble'].toString());
+        final i = v['\$numberInt']; if (i != null) return double.parse(i.toString());
+        final d = v['\$numberDouble']; if (d != null) return double.parse(d.toString());
       }
       return double.tryParse(v.toString()) ?? 0;
     }
@@ -198,58 +179,23 @@ class Campaign {
       urgencyLevel: j['urgencyLevel']?.toString() ?? 'low',
     );
   }
-
-  Color get urgencyColor {
-    switch (urgencyLevel) {
-      case 'high':   return AppColors.crimson;
-      case 'medium': return AppColors.amber;
-      default:       return AppColors.midGreen;
-    }
-  }
-
-  List<Color> get categoryGradient {
-    switch (category.toLowerCase()) {
-      case 'medical':     return [const Color(0xFF0B5E35), const Color(0xFF1A8C52)];
-      case 'education':   return [const Color(0xFF1565C0), const Color(0xFF1877C5)];
-      case 'emergencies': return [const Color(0xFFB71C1C), const Color(0xFFD93025)];
-      case 'water':       return [const Color(0xFF006064), const Color(0xFF00838F)];
-      case 'environment': return [const Color(0xFF1B5E20), const Color(0xFF2E7D32)];
-      case 'community':   return [const Color(0xFF4A148C), const Color(0xFF6A1B9A)];
-      default:            return [AppColors.forestGreen, AppColors.midGreen];
-    }
-  }
-
-  IconData get categoryIcon {
-    switch (category.toLowerCase()) {
-      case 'medical':     return Icons.favorite_rounded;
-      case 'education':   return Icons.school_rounded;
-      case 'emergencies': return Icons.warning_amber_rounded;
-      case 'water':       return Icons.water_drop_rounded;
-      case 'environment': return Icons.eco_rounded;
-      case 'community':   return Icons.people_rounded;
-      default:            return Icons.volunteer_activism_rounded;
-    }
-  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CAMPAIGN SERVICE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Service ─────────────────────────────────────────────────────────────────
 
 class CampaignService {
   static const _base = 'https://api.inuafund.co.ke/api';
+  static const _h    = {'Accept': 'application/json'};
 
   static Future<List<Campaign>> fetchFeatured() async {
     try {
-      final res = await http.get(Uri.parse('$_base/campaigns/featured'),
-          headers: {'Accept': 'application/json'}).timeout(const Duration(seconds: 10));
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        final list = (data is Map ? data['data'] : data) as List? ?? [];
-        return list.map((e) => Campaign.fromJson(e)).toList();
+      final r = await http.get(Uri.parse('$_base/campaigns/featured'), headers: _h).timeout(const Duration(seconds: 10));
+      if (r.statusCode == 200) {
+        final d = json.decode(r.body);
+        return ((d is Map ? d['data'] : d) as List? ?? []).map((e) => Campaign.fromJson(e)).toList();
       }
     } catch (_) {}
-    return _mock();
+    return [];
   }
 
   static Future<List<Campaign>> fetchAll({String? category}) async {
@@ -259,64 +205,46 @@ class CampaignService {
         if (category != null && category != 'All') 'category': category,
         'limit': '20',
       });
-      final res = await http.get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 10));
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        final list = (data is Map ? (data['data'] ?? data['campaigns']) : data) as List? ?? [];
-        return list.map((e) => Campaign.fromJson(e)).where((c) => c.title.isNotEmpty).toList();
-      }
-    } catch (_) {}
-    return _mock();
-  }
-
-  static Future<List<Campaign>> search(String q) async {
-    try {
-      final res = await http.get(
-        Uri.parse('$_base/campaigns?search=${Uri.encodeComponent(q)}'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 8));
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        final list = (data is Map ? data['data'] : data) as List? ?? [];
-        return list.map((e) => Campaign.fromJson(e)).toList();
+      final r = await http.get(uri, headers: _h).timeout(const Duration(seconds: 10));
+      if (r.statusCode == 200) {
+        final d = json.decode(r.body);
+        return ((d is Map ? (d['data'] ?? d['campaigns']) : d) as List? ?? [])
+            .map((e) => Campaign.fromJson(e)).where((c) => c.title.isNotEmpty).toList();
       }
     } catch (_) {}
     return [];
   }
 
-  static List<Campaign> _mock() => [
-    const Campaign(id: '1', title: 'Help Mama Wanjiku with Cancer Treatment',
-      description: 'Mama Wanjiku needs urgent support for chemotherapy at KNH.',
-      category: 'medical', amountRaised: 145000, goal: 300000,
-      completionPercentage: 48.3, daysRemaining: 14, donorCount: 89,
-      urgencyLevel: 'high', momentumScore: 9.1, creatorName: 'James Kamau'),
-    const Campaign(id: '2', title: 'Flood Relief — Tana River Families',
-      description: 'Emergency relief for 500+ families displaced by floods.',
-      category: 'emergencies', amountRaised: 312000, goal: 400000,
-      completionPercentage: 78.0, daysRemaining: 7, donorCount: 423,
-      urgencyLevel: 'high', momentumScore: 8.5, creatorName: 'Red Cross Kenya'),
-    const Campaign(id: '3', title: 'Kibera School Desks & Books Drive',
-      description: 'Quality desks and learning materials for 200 students.',
-      category: 'education', amountRaised: 67500, goal: 120000,
-      completionPercentage: 56.3, daysRemaining: 30, donorCount: 156,
-      urgencyLevel: 'low', momentumScore: 6.2, creatorName: 'Faith Otieno'),
-    const Campaign(id: '4', title: 'Borehole for Turkana Community',
-      description: 'Clean water access for 3,000 people via solar borehole.',
-      category: 'water', amountRaised: 230000, goal: 450000,
-      completionPercentage: 51.1, daysRemaining: 45, donorCount: 201,
-      urgencyLevel: 'medium', momentumScore: 5.0, creatorName: 'WaterAid Kenya'),
-    const Campaign(id: '5', title: 'Bursary for 12 Students — Kisumu',
-      description: 'Scholarship fund for bright students in Kisumu.',
-      category: 'education', amountRaised: 88000, goal: 150000,
-      completionPercentage: 58.7, daysRemaining: 12, donorCount: 67,
-      urgencyLevel: 'medium', momentumScore: 3.8, creatorName: 'Kisumu Youth Fund'),
-  ];
+  static Future<List<Campaign>> search(String q) async {
+    try {
+      final r = await http.get(
+        Uri.parse('$_base/campaigns?search=${Uri.encodeComponent(q)}'), headers: _h,
+      ).timeout(const Duration(seconds: 8));
+      if (r.statusCode == 200) {
+        final d = json.decode(r.body);
+        return ((d is Map ? d['data'] : d) as List? ?? []).map((e) => Campaign.fromJson(e)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// HOME SCREEN
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Category data ────────────────────────────────────────────────────────────
+
+const _kCategories = [
+  {'label': 'All',         'icon': Icons.apps_rounded,            'emoji': '🌍'},
+  {'label': 'medical',     'icon': Icons.favorite_rounded,        'emoji': '🏥'},
+  {'label': 'education',   'icon': Icons.school_rounded,          'emoji': '📚'},
+  {'label': 'community',   'icon': Icons.people_rounded,          'emoji': '🤝'},
+  {'label': 'emergencies', 'icon': Icons.warning_amber_rounded,   'emoji': '🚨'},
+  {'label': 'water',       'icon': Icons.water_drop_rounded,      'emoji': '💧'},
+  {'label': 'environment', 'icon': Icons.eco_rounded,             'emoji': '🌿'},
+  {'label': 'food',        'icon': Icons.restaurant_rounded,      'emoji': '🍽️'},
+  {'label': 'shelter',     'icon': Icons.home_rounded,            'emoji': '🏠'},
+  {'label': 'children',    'icon': Icons.child_care_rounded,      'emoji': '👶'},
+];
+
+// ─── HomeScreen ───────────────────────────────────────────────────────────────
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -324,8 +252,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  bool _isDark = false;
-  int  _navIndex = 0;
+  int _navIndex = 0;
   String _selectedCategory = 'All';
   int _carouselPage = 0;
 
@@ -333,6 +260,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   List<Campaign> _campaigns = [];
   bool _loadingFeatured = true;
   bool _loadingCampaigns = true;
+  bool _hasError = false;
 
   bool _searchActive = false;
   String _searchQuery = '';
@@ -342,54 +270,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   late final PageController _pageCtrl;
   late final AnimationController _listCtrl;
+  Timer? _autoScrollTimer;
 
-  Color get bg      => _isDark ? AppColors.darkBg    : AppColors.snow;
-  Color get surface => _isDark ? AppColors.darkCard   : AppColors.white;
-  Color get border  => _isDark ? AppColors.darkBorder : AppColors.cloud;
-  Color get txt1    => _isDark ? AppColors.white      : AppColors.ink;
-  Color get txt2    => _isDark ? AppColors.darkMist   : const Color(0xFF6B7280);
-  Color get txtHint => _isDark ? AppColors.darkMist   : const Color(0xFFB0B8BF);
-
-  static const _categories = [
-    {'label': 'All',         'icon': Icons.apps_rounded},
-    {'label': 'medical',     'icon': Icons.favorite_rounded},
-    {'label': 'education',   'icon': Icons.school_rounded},
-    {'label': 'community',   'icon': Icons.people_rounded},
-    {'label': 'emergencies', 'icon': Icons.warning_amber_rounded},
-    {'label': 'water',       'icon': Icons.water_drop_rounded},
-    {'label': 'environment', 'icon': Icons.eco_rounded},
-  ];
-
-  // ── Nav route map ──────────────────────────────────────────────────────────
-  // Each nav index maps to a named route or an action.
-  // 0 = Home (stay), 1 = Explore, 2 = FAB/Create, 3 = Alerts, 4 = Profile
-  static const _navRoutes = {
-    1: '/explore',
-    3: '/alerts',
-    4: '/profile',
-  };
+  Color get bg      => AppColors.snow;
+  Color get surface => AppColors.white;
+  Color get border  => AppColors.cloud;
+  Color get txt1    => AppColors.ink;
+  Color get txt2    => const Color(0xFF6B7280);
+  Color get txtHint => const Color(0xFFB0B8BF);
 
   @override
   void initState() {
     super.initState();
-    _pageCtrl = PageController(viewportFraction: 0.90);
-    _listCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
-    _loadAll();
+    _pageCtrl = PageController(viewportFraction: 0.92);
+    _listCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _loadFeatured();
+    _loadCampaigns();
+    _startAutoScroll();
   }
 
-  Future<void> _loadAll() async { _loadFeatured(); _loadCampaigns(); }
+  void _startAutoScroll() {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_featured.isNotEmpty && !_loadingFeatured) {
+        final nextPage = (_carouselPage + 1) % _featured.length;
+        _pageCtrl.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+      }
+    });
+  }
 
   Future<void> _loadFeatured() async {
-    setState(() => _loadingFeatured = true);
+    setState(() { _loadingFeatured = true; });
     final d = await CampaignService.fetchFeatured();
-    if (mounted) setState(() { _featured = d.take(3).toList(); _loadingFeatured = false; });
+    if (mounted) {
+      setState(() { _featured = d; _loadingFeatured = false; });
+    }
   }
 
   Future<void> _loadCampaigns() async {
-    setState(() => _loadingCampaigns = true);
+    setState(() { _loadingCampaigns = true; _hasError = false; });
     final d = await CampaignService.fetchAll(category: _selectedCategory);
     if (mounted) {
-      setState(() { _campaigns = d; _loadingCampaigns = false; });
+      setState(() { _campaigns = d; _loadingCampaigns = false; _hasError = d.isEmpty; });
       _listCtrl.forward(from: 0);
     }
   }
@@ -401,50 +322,48 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (mounted) setState(() { _searchResults = r; _searching = false; });
   }
 
-  // ── Navigate to StartCampaignScreen — pulls user from AuthProvider ─────────
-  void _openCreateCampaign() {
+  void _openCreate() {
     final auth = context.read<AuthProvider>();
     if (!auth.isAuthenticated) {
-      _showAuthRequired();
+      _showAuthSheet();
       return;
     }
     final user = auth.user!;
-    Navigator.push(
-      context,
-      _campaignRoute(StartCampaignScreen(
-        isDark:     _isDark,
-        authToken:  auth.token,
-        userId:     user.id,
-        username:   user.username,
-        userEmail:  user.email,
-        userPhone:  user.phoneNumber,
-      )),
-    );
+    Navigator.push(context, _slideRoute(StartCampaignScreen(
+      isDark: false, authToken: auth.token,
+      userId: user.id, username: user.username,
+      userEmail: user.email, userPhone: user.phoneNumber,
+    )));
   }
 
-  void _showAuthRequired() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _AuthRequiredSheet(surface: surface, border: border, txt1: txt1, txt2: txt2,
-        onLogin: () { Navigator.pop(context); Navigator.pushNamed(context, '/login'); }),
-    );
+  void _openCampaign(Campaign c) {
+    context.push('/campaigns/${c.id}');
   }
 
-  // ── Handle bottom nav taps ─────────────────────────────────────────────────
-  void _onNavTap(int idx) {
-  if (idx == 0) { setState(() => _navIndex = 0); return; }
-  
-  switch (idx) {
-    case 1: context.push('/explore'); break;   // ⚠️ add GoRoute for this
-    case 3: context.push('/alerts');  break;
-    case 4: context.push('/profile'); break;
+  void _showAuthSheet() => showModalBottomSheet(
+    context: context, backgroundColor: Colors.transparent,
+    builder: (_) => _AuthSheet(
+      surface: surface, border: border, txt1: txt1, txt2: txt2,
+      onLogin: () { Navigator.pop(context); Navigator.pushNamed(context, '/login'); }),
+  );
+
+  void _onNav(int idx) {
+    if (idx == 0) { setState(() => _navIndex = 0); return; }
+    setState(() => _navIndex = idx);
+    switch (idx) {
+      case 1: context.push('/explore');
+      case 3: context.push('/alerts');
+      case 4: context.push('/profile');
+    }
   }
-  setState(() => _navIndex = idx);
-}
+
+  void _onCategoryTap(String label) {
+    setState(() => _selectedCategory = label);
+    _loadCampaigns();
+  }
 
   @override
-  void dispose() { _pageCtrl.dispose(); _listCtrl.dispose(); _searchCtrl.dispose(); super.dispose(); }
+  void dispose() { _pageCtrl.dispose(); _listCtrl.dispose(); _searchCtrl.dispose(); _autoScrollTimer?.cancel(); super.dispose(); }
 
   String _kes(double v) {
     if (v >= 1000000) return 'KES ${(v / 1000000).toStringAsFixed(1)}M';
@@ -452,7 +371,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return 'KES ${v.toStringAsFixed(0)}';
   }
 
-  // ── Greeting based on time of day ──────────────────────────────────────────
   String get _greeting {
     final h = DateTime.now().hour;
     if (h < 12) return 'Good morning';
@@ -462,72 +380,77 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarBrightness: _isDark ? Brightness.dark : Brightness.light,
+      statusBarBrightness: Brightness.light,
     ));
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 320),
-      color: bg,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(child: _searchActive ? _buildSearch() : _buildMain()),
-        bottomNavigationBar: _buildNav(),
-      ),
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(child: _searchActive ? _buildSearch() : _buildMain()),
+      // ── No floating FAB — it lives inside the BottomAppBar ──
+      bottomNavigationBar: _searchActive ? null : _buildNav(),
     );
   }
 
-  // ── SEARCH VIEW ─────────────────────────────────────────────────────────────
+  // ── Search View ───────────────────────────────────────────────────────────
   Widget _buildSearch() => Column(children: [
+    // Uniform search bar — single flat container, no bar-in-bar
     Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: Row(children: [
         Expanded(
           child: Container(
-            height: 50,
+            height: 48,
             decoration: BoxDecoration(
-              color: surface, borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.midGreen, width: 1.5),
-              boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.12), blurRadius: 10, offset: const Offset(0, 3))],
+              color: surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.midGreen, width: 1.6),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Row(children: [
               const SizedBox(width: 14),
-              const Icon(Icons.search_rounded, color: AppColors.midGreen, size: 19),
+              const Icon(Icons.search_rounded, color: AppColors.midGreen, size: 20),
               const SizedBox(width: 10),
               Expanded(child: TextField(
-                controller: _searchCtrl, autofocus: true,
+                controller: _searchCtrl,
+                autofocus: true,
                 style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt1),
                 decoration: InputDecoration(
                   hintText: 'Search campaigns, causes…',
                   hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint),
                   border: InputBorder.none,
+                  isDense: true,
                 ),
                 onChanged: (v) { setState(() => _searchQuery = v); _doSearch(v); },
               )),
               if (_searchQuery.isNotEmpty)
                 GestureDetector(
                   onTap: () { _searchCtrl.clear(); setState(() { _searchQuery = ''; _searchResults = []; }); },
-                  child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.close_rounded, color: txt2, size: 18)),
-                ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Icon(Icons.close_rounded, color: txt2, size: 18),
+                  ),
+                )
+              else
+                const SizedBox(width: 14),
             ]),
           ),
         ),
         const SizedBox(width: 10),
         GestureDetector(
-          onTap: () { setState(() { _searchActive = false; _searchQuery = ''; _searchResults = []; }); _searchCtrl.clear(); },
-          child: Container(
-            height: 50, padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: border)),
-            child: const Center(child: Text('Cancel', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.midGreen))),
-          ),
+          onTap: () {
+            setState(() { _searchActive = false; _searchQuery = ''; _searchResults = []; });
+            _searchCtrl.clear();
+          },
+          child: const Text('Cancel',
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.midGreen)),
         ),
       ]),
     ),
-    const SizedBox(height: 16),
+    const SizedBox(height: 12),
     Expanded(
       child: _searching
-          ? const Center(child: CircularProgressIndicator(color: AppColors.midGreen, strokeWidth: 2.5))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.midGreen, strokeWidth: 2))
           : _searchQuery.length < 2
               ? _searchHints()
               : _searchResults.isEmpty
@@ -535,559 +458,606 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: _searchResults.length,
-                      itemBuilder: (_, i) => _SearchCard(c: _searchResults[i], surface: surface, border: border, txt1: txt1, txt2: txt2, kes: _kes)),
+                      itemBuilder: (_, i) => GestureDetector(
+                        onTap: () => _openCampaign(_searchResults[i]),
+                        child: _SearchCard(
+                          c: _searchResults[i], surface: surface,
+                          border: border, txt1: txt1, txt2: txt2, kes: _kes),
+                      ),
+                    ),
     ),
   ]);
 
-  Widget _searchHints() {
-    final tags = ['medical', 'education', 'water', 'emergencies', 'community', 'borehole'];
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Popular searches', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16, color: txt1)),
-        const SizedBox(height: 14),
-        Wrap(spacing: 10, runSpacing: 10, children: tags.map((t) => GestureDetector(
+  Widget _searchHints() => Padding(
+    padding: const EdgeInsets.all(20),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Popular searches', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 15, color: txt1)),
+      const SizedBox(height: 12),
+      Wrap(spacing: 8, runSpacing: 8, children: ['medical', 'education', 'water', 'emergencies', 'community', 'borehole'].map((t) =>
+        GestureDetector(
           onTap: () { _searchCtrl.text = t; setState(() => _searchQuery = t); _doSearch(t); },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: AppColors.midGreen.withOpacity(0.08),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: AppColors.midGreen.withOpacity(0.25)),
+              border: Border.all(color: AppColors.midGreen.withOpacity(0.2)),
             ),
             child: Text(t, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.midGreen)),
           ),
-        )).toList()),
-      ]),
-    );
-  }
+        ),
+      ).toList()),
+    ]),
+  );
 
   Widget _noResults() => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-    Icon(Icons.search_off_rounded, size: 54, color: txtHint),
-    const SizedBox(height: 12),
-    Text('No campaigns found', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16, color: txt1)),
-    const SizedBox(height: 6),
-    Text('Try a different keyword', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
+    Icon(Icons.search_off_rounded, size: 48, color: txtHint),
+    const SizedBox(height: 10),
+    Text('No results found', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 15, color: txt1)),
+    const SizedBox(height: 4),
+    Text('Try another keyword', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
   ]));
 
-  // ── MAIN SCROLL VIEW ────────────────────────────────────────────────────────
+  // ── Main Scroll View ──────────────────────────────────────────────────────
   Widget _buildMain() => CustomScrollView(
     physics: const BouncingScrollPhysics(),
     slivers: [
       SliverToBoxAdapter(child: _topBar()),
       SliverToBoxAdapter(child: _searchBar()),
-      // SliverToBoxAdapter(child: _statsRow()),
       SliverToBoxAdapter(child: _sectionLabel('Featured campaigns')),
       SliverToBoxAdapter(child: _featuredCarousel()),
-      SliverToBoxAdapter(child: _sectionLabel('Browse by category')),
-      SliverToBoxAdapter(child: _categoryChips()),
-      SliverToBoxAdapter(child: _activeCampaignsHeader()),
+      // ── Browse by Category section ──
+      SliverToBoxAdapter(child: _sectionLabel('Browse by Category')),
+      SliverToBoxAdapter(child: _categoryGrid()),
+      SliverToBoxAdapter(child: _campaignsHeader()),
       if (_loadingCampaigns)
         SliverList(delegate: SliverChildBuilderDelegate(
-          (_, i) => _SkeletonCard(surface: surface, border: border), childCount: 3))
+          (_, i) => _Skeleton(surface: surface, border: border), childCount: 4))
       else if (_campaigns.isEmpty)
         SliverToBoxAdapter(child: _emptyState())
       else
         SliverList(delegate: SliverChildBuilderDelegate(
           (_, i) => _StaggerItem(
             index: i, ctrl: _listCtrl,
-            child: _ActiveCampaignCard(c: _campaigns[i], isDark: _isDark,
-              surface: surface, border: border, txt1: txt1, txt2: txt2, txtHint: txtHint, kes: _kes),
+            child: GestureDetector(
+              onTap: () => _openCampaign(_campaigns[i]),
+              child: _CampaignCard(
+                c: _campaigns[i], surface: surface, border: border,
+                txt1: txt1, txt2: txt2, txtHint: txtHint, kes: _kes),
+            ),
           ),
           childCount: _campaigns.length,
         )),
-      const SliverToBoxAdapter(child: SizedBox(height: 110)),
+      const SliverToBoxAdapter(child: SizedBox(height: 120)),
     ],
   );
 
-  // ── Top bar — reads user name from AuthProvider ─────────────────────────────
+  // ── Top Bar ───────────────────────────────────────────────────────────────
   Widget _topBar() {
     final auth = context.watch<AuthProvider>();
-    final displayName = auth.user?.username ?? auth.user?.fullName ?? 'Guest';
+    final name = auth.user?.username ?? auth.user?.fullName ?? 'Guest';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(_greeting, style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2, fontWeight: FontWeight.w400)),
-          const SizedBox(height: 2),
-          Text('$displayName 👋',
-            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 24, color: txt1, letterSpacing: -0.5, height: 1.15)),
-          const SizedBox(height: 3),
-          Text('What cause will you support today?', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
+          Text(_greeting, style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
+          const SizedBox(height: 1),
+          Row(children: [
+            Text(name, style: TextStyle(fontFamily: 'Poppins', fontSize: 18, color: txt1, fontWeight: FontWeight.w500)),
+            const SizedBox(width: 4),
+            const Text('👋', style: TextStyle(fontSize: 16)),
+          ]),
         ])),
-        const SizedBox(width: 12),
-        _RoundedIconBtn(icon: Icons.search_rounded, surface: surface, border: border, iconColor: txt1,
-          onTap: () => setState(() => _searchActive = true)),
-        const SizedBox(width: 8),
-        // Dark mode toggle
-        // _RoundedIconBtn(
-        //   icon: _isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-        //   surface: surface, border: border, iconColor: txt1,
-        //   onTap: () => setState(() => _isDark = !_isDark),
-        // ),
-        const SizedBox(width: 8),
         Stack(clipBehavior: Clip.none, children: [
-          _RoundedIconBtn(icon: Icons.notifications_outlined, surface: surface, border: border, iconColor: txt1,
-            onTap: () => _onNavTap(3)),
+          _IconBtn(icon: Icons.notifications_outlined, onTap: () => _onNav(3), surface: surface, border: border, color: txt1),
           Positioned(top: 8, right: 8,
-            child: Container(width: 9, height: 9,
-              decoration: BoxDecoration(color: AppColors.crimson, shape: BoxShape.circle, border: Border.all(color: surface, width: 1.5)))),
+            child: Container(width: 8, height: 8,
+              decoration: BoxDecoration(color: AppColors.crimson, shape: BoxShape.circle,
+                border: Border.all(color: surface, width: 1.2)))),
         ]),
       ]),
     );
   }
 
+  // ── Uniform Search Bar (tap-to-open) ─────────────────────────────────────
+  // Single flat container — no nested pill or second bar inside.
   Widget _searchBar() => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
     child: GestureDetector(
       onTap: () => setState(() => _searchActive = true),
       child: Container(
-        height: 50,
+        height: 48,
         decoration: BoxDecoration(
-          color: surface, borderRadius: BorderRadius.circular(14),
+          color: surface,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Row(children: [
           const SizedBox(width: 14),
-          Icon(Icons.search_rounded, color: txtHint, size: 19),
-          const SizedBox(width: 8),
-          Expanded(child: Text('Search campaigns, causes...', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint))),
-          Container(
-            margin: const EdgeInsets.all(6),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(10)),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.tune_rounded, color: Colors.white, size: 14),
-              SizedBox(width: 5),
-              Text('Filter', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: Colors.white)),
-            ]),
+          Icon(Icons.search_rounded, color: txtHint, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('Search campaigns, causes…',
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txtHint)),
+          ),
+          // Filter icon pill — right-aligned, no extra container border
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.midGreen.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.tune_rounded, color: AppColors.midGreen, size: 14),
+                const SizedBox(width: 4),
+                const Text('Filter',
+                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.midGreen)),
+              ]),
+            ),
           ),
         ]),
       ),
     ),
   );
 
-  // Widget _statsRow() {
-  //   final totalRaised = _campaigns.fold<double>(0, (s, c) => s + c.amountRaised);
-  //   final totalDonors = _campaigns.fold<int>(0, (s, c) => s + c.donorCount);
-  //   return Padding(
-  //     padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-  //     child: Row(children: [
-  //       _StatCard(value: _campaigns.isEmpty ? '—' : _campaigns.length.toString(), label: 'Campaigns', surface: surface, border: border, txt1: txt1, txt2: txt2),
-  //       const SizedBox(width: 10),
-  //       _StatCard(value: _kes(totalRaised), label: 'Total raised', surface: surface, border: border, txt1: txt1, txt2: txt2),
-  //       const SizedBox(width: 10),
-  //       _StatCard(
-  //         value: totalDonors >= 1000 ? '${(totalDonors / 1000).toStringAsFixed(1)}K' : totalDonors.toString(),
-  //         label: 'Donors', surface: surface, border: border, txt1: txt1, txt2: txt2),
-  //     ]),
-  //   );
-  // }
-
-  Widget _sectionLabel(String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+  // ── Section Label ─────────────────────────────────────────────────────────
+  Widget _sectionLabel(String text, {Widget? trailing}) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
     child: Row(children: [
-      Container(width: 4, height: 20, decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(3))),
-      const SizedBox(width: 10),
-      Text(text, style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: txt1, letterSpacing: -0.2)),
+      Container(width: 3, height: 17,
+        decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(3))),
+      const SizedBox(width: 8),
+      Text(text, style: TextStyle(
+        fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 16, color: txt1, letterSpacing: -0.2)),
+      if (trailing != null) ...[const Spacer(), trailing],
     ]),
   );
 
+  // ── Featured Carousel ─────────────────────────────────────────────────────
   Widget _featuredCarousel() => Column(children: [
     SizedBox(
-      height: 360,
+      height: 200,
       child: _loadingFeatured
-          ? _shimmerCarousel()
-          : _featured.isEmpty ? const SizedBox()
-          : PageView.builder(
-              controller: _pageCtrl,
-              itemCount: _featured.length,
-              onPageChanged: (i) => setState(() => _carouselPage = i),
-              itemBuilder: (_, i) => _FeaturedCard(c: _featured[i], kes: _kes, surface: surface, border: border, txt1: txt1, txt2: txt2),
-            ),
+          ? _shimmer()
+          : _featured.isEmpty
+              ? const SizedBox()
+              : PageView.builder(
+                  controller: _pageCtrl,
+                  itemCount: _featured.length,
+                  onPageChanged: (i) => setState(() => _carouselPage = i),
+                  itemBuilder: (_, i) => GestureDetector(
+                    onTap: () => _openCampaign(_featured[i]),
+                    child: _FeaturedCard(c: _featured[i], kes: _kes, txt2: txt2),
+                  ),
+                ),
     ),
     if (!_loadingFeatured && _featured.isNotEmpty) ...[
-      const SizedBox(height: 12),
+      const SizedBox(height: 10),
       Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(_featured.length, (i) =>
         AnimatedContainer(
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 260), curve: Curves.easeInOut,
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: _carouselPage == i ? 24 : 7, height: 7,
-          decoration: BoxDecoration(color: _carouselPage == i ? AppColors.midGreen : border, borderRadius: BorderRadius.circular(4)),
+          width: _carouselPage == i ? 20 : 6, height: 6,
+          decoration: BoxDecoration(
+            color: _carouselPage == i ? AppColors.midGreen : border,
+            borderRadius: BorderRadius.circular(4)),
         ),
       )),
     ],
   ]);
 
-  Widget _shimmerCarousel() => ListView.builder(
-    scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 10),
-    itemCount: 2,
-    itemBuilder: (_, __) => _ShimmerBox(w: 300, h: 310, r: 22, surface: surface));
+  Widget _shimmer() => ListView.builder(
+    scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20),
+    itemCount: 2, itemBuilder: (_, __) => _ShimmerBox(w: 280, h: 180, r: 16, surface: surface));
 
-  Widget _categoryChips() => SizedBox(
-    height: 40,
-    child: ListView.builder(
-      scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: _categories.length,
-      itemBuilder: (_, i) {
-        final cat = _categories[i];
-        final sel = _selectedCategory == cat['label'];
-        return GestureDetector(
-          onTap: () { setState(() => _selectedCategory = cat['label'] as String); _loadCampaigns(); },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200), curve: Curves.easeInOut,
-            margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: sel ? AppColors.midGreen : surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: sel ? AppColors.midGreen : border, width: 1.2),
+ // ── Browse by Category – horizontal oval chips ──────────────────────────
+  Widget _categoryGrid() {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _kCategories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final cat   = _kCategories[i];
+          final label = cat['label'] as String;
+          final icon  = cat['icon'] as IconData;
+          final sel   = _selectedCategory == label;
+
+          return GestureDetector(
+            onTap: () => _onCategoryTap(label),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: sel ? AppColors.midGreen : surface,
+                borderRadius: BorderRadius.circular(50), // full pill/oval
+                border: Border.all(
+                  color: sel ? AppColors.midGreen : border,
+                  width: sel ? 1.5 : 1,
+                ),
+                boxShadow: sel
+                    ? [BoxShadow(color: AppColors.midGreen.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
+                    : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 1))],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 14,
+                    color: sel ? Colors.white : txt2,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    label == 'All' ? 'All' : _capFirst(label),
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: sel ? Colors.white : txt2,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              if (sel)
-                Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6),
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle))
-              else ...[
-                Icon(cat['icon'] as IconData, size: 13, color: txt2),
-                const SizedBox(width: 5),
-              ],
-              Text(cat['label'] as String,
-                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13,
-                  color: sel ? Colors.white : txt2)),
-            ]),
-          ),
-        );
-      },
-    ),
-  );
+          );
+        },
+      ),
+    );
+  }
+  
+  String _capFirst(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
-  Widget _activeCampaignsHeader() => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
+  // ── Campaigns Header ──────────────────────────────────────────────────────
+  Widget _campaignsHeader() => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
     child: Row(children: [
-      Container(width: 4, height: 20, decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(3))),
-      const SizedBox(width: 10),
-      Text('Active campaigns', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 17, color: txt1, letterSpacing: -0.2)),
-      const Spacer(),
+      Container(width: 3, height: 17,
+        decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(3))),
+      const SizedBox(width: 8),
+      Expanded(child: Text(
+        _selectedCategory == 'All' ? 'Active campaigns' : '${_capFirst(_selectedCategory)} campaigns',
+        style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 16, color: txt1),
+      )),
       GestureDetector(
-        onTap: () => _onNavTap(1), // goes to Explore
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: AppColors.midGreen.withOpacity(0.08), borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.midGreen.withOpacity(0.2)),
-          ),
-          child: const Text('See all', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.midGreen)),
-        ),
+        onTap: () => _onNav(1),
+        child: const Text('See all',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.midGreen)),
       ),
     ]),
   );
 
   Widget _emptyState() => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 40),
+    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
     child: Column(children: [
-      const Text('🌿', style: TextStyle(fontSize: 52)),
-      const SizedBox(height: 14),
-      Text('No campaigns yet', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 16, color: txt1), textAlign: TextAlign.center),
-      const SizedBox(height: 6),
+      const Text('🌿', style: TextStyle(fontSize: 44)),
+      const SizedBox(height: 12),
+      Text('No campaigns yet', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 15, color: txt1), textAlign: TextAlign.center),
+      const SizedBox(height: 4),
       Text('Be the first in this category', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2), textAlign: TextAlign.center),
     ]),
   );
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // BOTTOM NAV — fully wired
-  // 0 Home · 1 Explore · FAB Create · 3 Alerts · 4 Profile
-  // ═══════════════════════════════════════════════════════════════════════════
-  Widget _buildNav() => AnimatedContainer(
-    duration: const Duration(milliseconds: 300),
-    decoration: BoxDecoration(
-      color: surface,
-      border: Border(top: BorderSide(color: border, width: 0.8)),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(_isDark ? 0.45 : 0.06), blurRadius: 18, offset: const Offset(0, -4))],
-    ),
-    child: SafeArea(
-      child: SizedBox(
-        height: 64,
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          // 0 — Home
-          _NavItem(icon: Icons.home_rounded, label: 'Home', idx: 0,
-            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
-
-          // 1 — Explore
-          _NavItem(icon: Icons.explore_rounded, label: 'Explore', idx: 1,
-            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
-
-          // FAB — Create Campaign (idx 2, wired to StartCampaignScreen)
-          GestureDetector(
-            onTap: _openCreateCampaign,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.9, end: 1.0),
-              duration: const Duration(milliseconds: 600),
-              curve: Curves.elasticOut,
-              builder: (_, v, child) => Transform.scale(scale: v, child: child),
-              child: Container(
-                width: 54, height: 54,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [AppColors.forestGreen, AppColors.limeGreen],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight),
-                  boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 5))],
-                ),
-                child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
-              ),
-            ),
-          ),
-
-          // 3 — Alerts
-          _NavItem(icon: Icons.notifications_outlined, label: 'Alerts', idx: 3,
-            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
-
-          // 4 — Profile
-          _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4,
-            cur: _navIndex, txt2: txt2, onTap: _onNavTap),
-        ]),
+  // ── Bottom Nav — FAB lives HERE as a raised loop circle ──────────────────
+  Widget _buildNav() {
+    return Container(
+      decoration: BoxDecoration(
+        color: surface,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.09), blurRadius: 16, offset: const Offset(0, -3))],
       ),
-    ),
-  );
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(children: [
+            // Home
+            Expanded(child: _NavItem(icon: Icons.home_rounded, label: 'Home', idx: 0, cur: _navIndex, txt2: txt2, onTap: _onNav)),
+            // Explore
+            Expanded(child: _NavItem(icon: Icons.explore_rounded, label: 'Explore', idx: 1, cur: _navIndex, txt2: txt2, onTap: _onNav)),
+
+            // ── Centre FAB — loop/circle raised above the bar ──────────────
+            SizedBox(
+              width: 72,
+              child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
+                // Arch outline drawn around the circle — gives the "loop" / arch shape
+                Positioned(
+                  top: -18,
+                  child: CustomPaint(
+                    size: const Size(72, 40),
+                    painter: _NavArchPainter(color: surface, borderColor: border),
+                  ),
+                ),
+                // The FAB button itself
+                Positioned(
+                  top: -24,
+                  child: GestureDetector(
+                    onTap: _openCreate,
+                    child: Container(
+                      width: 52, height: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [AppColors.forestGreen, AppColors.limeGreen],
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(color: AppColors.midGreen.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 5)),
+                        ],
+                      ),
+                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                    ),
+                  ),
+                ),
+                // Label below
+                Positioned(
+                  bottom: 6,
+                  child: Text('Create',
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: txt2)),
+                ),
+              ]),
+            ),
+
+            // Alerts
+            Expanded(child: _NavItem(icon: Icons.notifications_outlined, label: 'Alerts', idx: 3, cur: _navIndex, txt2: txt2, onTap: _onNav)),
+            // Profile
+            Expanded(child: _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4, cur: _navIndex, txt2: txt2, onTap: _onNav)),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// AUTH REQUIRED BOTTOM SHEET
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Nav Arch Painter — draws the arch/loop cutout outline ───────────────────
 
-class _AuthRequiredSheet extends StatelessWidget {
+class _NavArchPainter extends CustomPainter {
+  final Color color;
+  final Color borderColor;
+  const _NavArchPainter({required this.color, required this.borderColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    const r = 32.0; // circle radius + margin
+
+    // Fill path: rectangle with circular arch cutout at top
+    final fillPath = Path()
+      ..moveTo(0, h)
+      ..lineTo(0, r * 0.7)
+      ..arcToPoint(Offset(w, r * 0.7),
+          radius: const Radius.circular(r + 4),
+          clockwise: false)
+      ..lineTo(w, h)
+      ..close();
+
+    canvas.drawPath(fillPath, Paint()..color = color);
+
+    // Draw only the curved top border
+    final borderPath = Path()
+      ..moveTo(0, r * 0.7)
+      ..arcToPoint(Offset(w, r * 0.7),
+          radius: const Radius.circular(r + 4),
+          clockwise: false);
+
+    canvas.drawPath(
+      borderPath,
+      Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _NavArchPainter old) =>
+      old.color != color || old.borderColor != borderColor;
+}
+
+// ─── Auth Sheet ───────────────────────────────────────────────────────────────
+
+class _AuthSheet extends StatelessWidget {
   final Color surface, border, txt1, txt2;
   final VoidCallback onLogin;
-  const _AuthRequiredSheet({required this.surface, required this.border, required this.txt1, required this.txt2, required this.onLogin});
+  const _AuthSheet({required this.surface, required this.border, required this.txt1, required this.txt2, required this.onLogin});
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(
-      color: surface,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-    ),
+    decoration: BoxDecoration(color: surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
     child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 40, height: 4, decoration: BoxDecoration(color: border, borderRadius: BorderRadius.circular(2))),
+      Container(width: 36, height: 4, decoration: BoxDecoration(color: border, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(height: 22),
+      Container(width: 68, height: 68,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.midGreen.withOpacity(0.08)),
+        child: const Icon(Icons.lock_outline_rounded, color: AppColors.midGreen, size: 32)),
+      const SizedBox(height: 18),
+      Text('Sign in to create', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 18, color: txt1)),
+      const SizedBox(height: 6),
+      Text('You need an account to start a campaign.', textAlign: TextAlign.center,
+        style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
       const SizedBox(height: 24),
-      Container(width: 72, height: 72, decoration: BoxDecoration(shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [AppColors.forestGreen.withOpacity(0.15), AppColors.limeGreen.withOpacity(0.15)])),
-        child: const Icon(Icons.lock_outline_rounded, color: AppColors.midGreen, size: 36)),
-      const SizedBox(height: 20),
-      Text('Sign in to Create', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 20, color: txt1)),
-      const SizedBox(height: 8),
-      Text('You need an account to start a campaign.\nIt only takes a minute!',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: txt2, height: 1.5)),
-      const SizedBox(height: 28),
-      GestureDetector(
-        onTap: onLogin,
-        child: Container(
-          height: 52, width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [AppColors.forestGreen, AppColors.limeGreen]),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 5))],
-          ),
-          child: const Center(child: Text('Sign In / Register', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 15, color: Colors.white))),
-        ),
-      ),
-      const SizedBox(height: 12),
-      GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Container(height: 50, width: double.infinity, alignment: Alignment.center,
-          child: Text('Not now', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 14, color: txt2))),
-      ),
+      SizedBox(width: double.infinity, height: 50,
+        child: ElevatedButton(
+          onPressed: onLogin,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.forestGreen, foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+            elevation: 0),
+          child: const Text('Sign in / Register',
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 14)),
+        )),
+      const SizedBox(height: 10),
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text('Not now',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w500, fontSize: 13, color: txt2))),
     ]),
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// FEATURED CARD
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Featured Card ────────────────────────────────────────────────────────────
 
 class _FeaturedCard extends StatelessWidget {
   final Campaign c;
   final String Function(double) kes;
-  final Color surface, border, txt1, txt2;
-  const _FeaturedCard({required this.c, required this.kes, required this.surface, required this.border, required this.txt1, required this.txt2});
+  final Color txt2;
+  const _FeaturedCard({required this.c, required this.kes, required this.txt2});
 
   @override
   Widget build(BuildContext context) {
     final progress = (c.completionPercentage / 100).clamp(0.0, 1.0);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 7),
+      margin: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: surface, borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 20, offset: const Offset(0, 6))],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.hardEdge,
-      child: Column(children: [
-        SizedBox(height: 155, child: Stack(children: [
-          Positioned.fill(child: c.featuredImage != null
-              ? Image.network(c.featuredImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradBg())
-              : _gradBg()),
-          Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(
-            colors: [Colors.transparent, Colors.black.withOpacity(0.22)],
-            begin: Alignment.topCenter, end: Alignment.bottomCenter)))),
-          Positioned(top: 14, left: 14, child: Row(children: [
-            if (c.urgencyLevel == 'high') ...[const _BadgePill(label: 'URGENT', bg: AppColors.crimson), const SizedBox(width: 6)],
-            _BadgePill(label: c.category.toUpperCase(), bg: AppColors.midGreen),
-          ])),
-          if (c.tier != CampaignTier.none)
-            Positioned(top: 10, right: 14, child: TierMedalBadge(tier: c.tier, size: 36)),
-        ])),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (c.creatorName != null) Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-            const SizedBox(height: 2),
-            Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 16, color: txt1, height: 1.3)),
-            const SizedBox(height: 8),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 900), curve: Curves.easeOutCubic,
-              builder: (_, val, __) => ClipRRect(borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(value: val, minHeight: 8, backgroundColor: border,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.midGreen)))),
-            const SizedBox(height: 7),
-            Row(children: [
-              RichText(text: TextSpan(children: [
-                TextSpan(text: kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.midGreen)),
-                TextSpan(text: ' / ${kes(c.goal)}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-              ])),
-              const Spacer(),
-              Text('${c.completionPercentage.toStringAsFixed(0)}%',
-                style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.savanna)),
-            ]),
-            const SizedBox(height: 4),
-            Text('${c.donorCount} donors · ${c.daysRemaining} days left', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-            const SizedBox(height: 10),
-           
-          ]),
+      child: Stack(children: [
+        Positioned.fill(
+          child: c.featuredImage != null
+              ? Image.network(c.featuredImage!, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _grad())
+              : _grad(),
         ),
+        Positioned.fill(child: Container(decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.transparent, Colors.black.withOpacity(0.78)],
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            stops: const [0.3, 1.0]),
+        ))),
+        Positioned(left: 14, right: 14, bottom: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            if (c.urgencyLevel == 'high') ...[
+              _Pill(label: 'URGENT', bg: AppColors.crimson), const SizedBox(width: 6),
+            ],
+            _Pill(label: c.category.toUpperCase(), bg: AppColors.midGreen.withOpacity(0.9)),
+          ]),
+          const SizedBox(height: 6),
+          Text(c.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white, height: 1.2)),
+          const SizedBox(height: 6),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: progress),
+            duration: const Duration(milliseconds: 900), curve: Curves.easeOutCubic,
+            builder: (_, v, __) => ClipRRect(borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(value: v, minHeight: 5, backgroundColor: Colors.white24,
+                valueColor: const AlwaysStoppedAnimation(AppColors.limeGreen)))),
+          const SizedBox(height: 6),
+          Row(children: [
+            Text(kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.limeGreen)),
+            Text(' / ${kes(c.goal)}', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.white60)),
+            const Spacer(),
+            Text('${c.daysRemaining}d left', style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.white70)),
+          ]),
+        ])),
+        if (c.tier != CampaignTier.none)
+          Positioned(top: 12, right: 12, child: TierMedalBadge(tier: c.tier, size: 30)),
       ]),
     );
   }
-  Widget _gradBg() => Container(decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight)));
+
+  Widget _grad() => Container(decoration: BoxDecoration(
+    gradient: LinearGradient(colors: c.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight)));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ACTIVE CAMPAIGN CARD
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Campaign Card ────────────────────────────────────────────────────────────
 
-class _ActiveCampaignCard extends StatelessWidget {
+class _CampaignCard extends StatelessWidget {
   final Campaign c;
-  final bool isDark;
   final Color surface, border, txt1, txt2, txtHint;
   final String Function(double) kes;
-  const _ActiveCampaignCard({required this.c, required this.isDark, required this.surface,
-    required this.border, required this.txt1, required this.txt2, required this.txtHint, required this.kes});
+  const _CampaignCard({required this.c, required this.surface, required this.border,
+    required this.txt1, required this.txt2, required this.txtHint, required this.kes});
 
   @override
   Widget build(BuildContext context) {
     final progress = (c.completionPercentage / 100).clamp(0.0, 1.0);
     final urgent   = c.daysRemaining <= 7;
-    final barColor = urgent ? c.urgencyColor : AppColors.midGreen;
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       decoration: BoxDecoration(
-        color: surface, borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: urgent ? c.urgencyColor.withOpacity(0.30) : border, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.22 : 0.05), blurRadius: 12, offset: const Offset(0, 3))],
+        color: surface, borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: urgent ? c.urgencyColor.withOpacity(0.25) : border),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 2))],
       ),
-      child: Column(children: [
-        Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Stack(clipBehavior: Clip.none, children: [
-              Container(
-                width: 80, height: 80,
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(14),
-                  gradient: LinearGradient(colors: c.categoryGradient, begin: Alignment.topLeft, end: Alignment.bottomRight)),
-                child: c.featuredImage != null
-                    ? ClipRRect(borderRadius: BorderRadius.circular(14),
-                        child: Image.network(c.featuredImage!, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _thumbIcon()))
-                    : _thumbIcon(),
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Stack(clipBehavior: Clip.none, children: [
+            Container(
+              width: 72, height: 72,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(colors: c.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
               ),
-              if (c.tier != CampaignTier.none)
-                Positioned(bottom: -6, left: -4, child: TierMedalBadge(tier: c.tier, size: 24)),
-            ]),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                  decoration: BoxDecoration(color: c.categoryGradient[0].withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-                  child: Text(c.category.toUpperCase(),
-                    style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: c.categoryGradient[0])),
-                ),
-                if (urgent) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                    decoration: BoxDecoration(color: AppColors.crimson.withOpacity(0.10), borderRadius: BorderRadius.circular(20)),
-                    child: const Text('EMERGENCY', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 10, color: AppColors.crimson)),
-                  ),
-                ],
-              ]),
-              const SizedBox(height: 6),
-              Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: txt1, height: 1.3)),
-              const SizedBox(height: 4),
-              if (c.creatorName != null)
-                Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-            ])),
+              child: c.featuredImage != null
+                  ? ClipRRect(borderRadius: BorderRadius.circular(12),
+                      child: Image.network(c.featuredImage!, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(child: Icon(c.icon, color: Colors.white.withOpacity(0.85), size: 28))))
+                  : Center(child: Icon(c.icon, color: Colors.white.withOpacity(0.85), size: 28)),
+            ),
+            if (c.tier != CampaignTier.none)
+              Positioned(bottom: -5, left: -4, child: TierMedalBadge(tier: c.tier, size: 22)),
           ]),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: c.gradient[0].withOpacity(0.10), borderRadius: BorderRadius.circular(6)),
+                child: Text(c.category.toUpperCase(),
+                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 9, color: c.gradient[0])),
+              ),
+              if (urgent) ...[
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: AppColors.crimson.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                  child: const Text('URGENT',
+                    style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 9, color: AppColors.crimson)),
+                ),
+              ],
+            ]),
+            const SizedBox(height: 5),
+            Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 13, color: txt1, height: 1.3)),
+            if (c.creatorName != null) ...[
+              const SizedBox(height: 3),
+              Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: txt2)),
+            ],
+            const SizedBox(height: 8),
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 950), curve: Curves.easeOutCubic,
-              builder: (_, val, __) => ClipRRect(borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(value: val, minHeight: 7, backgroundColor: border,
-                  valueColor: AlwaysStoppedAnimation(barColor)))),
-            const SizedBox(height: 10),
-            Row(children: [
-              RichText(text: TextSpan(children: [
-                TextSpan(text: kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.midGreen)),
-                TextSpan(text: ' / ${kes(c.goal)}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-              ])),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: urgent ? AppColors.crimson.withOpacity(0.10) : border.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: urgent ? AppColors.crimson.withOpacity(0.25) : Colors.transparent),
-                ),
-                child: Text('${c.daysRemaining}d left',
-                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 11,
-                    color: urgent ? AppColors.crimson : txtHint)),
-              ),
-            ]),
+              duration: const Duration(milliseconds: 900), curve: Curves.easeOutCubic,
+              builder: (_, v, __) => ClipRRect(borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(value: v, minHeight: 5, backgroundColor: border,
+                  valueColor: AlwaysStoppedAnimation(urgent ? c.urgencyColor : AppColors.midGreen)))),
             const SizedBox(height: 6),
-            Text('${c.donorCount} donors · ${c.completionPercentage.toStringAsFixed(0)}% funded',
-              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-            const SizedBox(height: 14),
-            
-
-          ]),
-        ),
-      ]),
+            Row(children: [
+              Text(kes(c.amountRaised),
+                style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.midGreen)),
+              Text(' / ${kes(c.goal)}', style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: txt2)),
+              const Spacer(),
+              Text('${c.daysRemaining}d left',
+                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 11,
+                  color: urgent ? AppColors.crimson : txtHint)),
+            ]),
+          ])),
+        ]),
+      ),
     );
   }
-  Widget _thumbIcon() => Center(child: Icon(c.categoryIcon, color: Colors.white.withOpacity(0.85), size: 32));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SEARCH RESULT CARD
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Search Card ──────────────────────────────────────────────────────────────
 
 class _SearchCard extends StatelessWidget {
   final Campaign c;
@@ -1099,76 +1069,63 @@ class _SearchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: border)),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: border)),
     child: Row(children: [
-      Stack(clipBehavior: Clip.none, children: [
-        Container(width: 50, height: 50,
-          decoration: BoxDecoration(gradient: LinearGradient(colors: c.categoryGradient), borderRadius: BorderRadius.circular(12)),
-          child: Center(child: Icon(c.categoryIcon, color: Colors.white, size: 24))),
-        if (c.tier != CampaignTier.none)
-          Positioned(bottom: -5, right: -5, child: TierMedalBadge(tier: c.tier, size: 20)),
-      ]),
+      Container(width: 46, height: 46,
+        decoration: BoxDecoration(gradient: LinearGradient(colors: c.gradient), borderRadius: BorderRadius.circular(10)),
+        child: Center(child: Icon(c.icon, color: Colors.white, size: 22))),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(c.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 14, color: txt1)),
-        const SizedBox(height: 3),
-        Text(c.category, style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.midGreen)),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13, color: txt1)),
+        Text(c.category,
+          style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: AppColors.midGreen)),
       ])),
-      const SizedBox(width: 10),
-      Text(kes(c.goal), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.forestGreen)),
+      const SizedBox(width: 8),
+      Text(kes(c.goal),
+        style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.forestGreen)),
     ]),
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// STAGGER ANIMATION
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Stagger Animation ────────────────────────────────────────────────────────
 
 class _StaggerItem extends StatelessWidget {
-  final int index;
-  final AnimationController ctrl;
-  final Widget child;
+  final int index; final AnimationController ctrl; final Widget child;
   const _StaggerItem({required this.index, required this.ctrl, required this.child});
-
   @override
   Widget build(BuildContext context) {
-    final start = (index * 0.10).clamp(0.0, 0.75);
-    final end   = (start + 0.38).clamp(0.0, 1.0);
+    final start = (index * 0.09).clamp(0.0, 0.72);
+    final end   = (start + 0.36).clamp(0.0, 1.0);
     final anim  = CurvedAnimation(parent: ctrl, curve: Interval(start, end, curve: Curves.easeOutCubic));
     return AnimatedBuilder(
       animation: anim,
       builder: (_, __) => Opacity(opacity: anim.value,
-        child: Transform.translate(offset: Offset(0, 20 * (1 - anim.value)), child: child)),
+        child: Transform.translate(offset: Offset(0, 18 * (1 - anim.value)), child: child)),
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SKELETON / SHIMMER
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Skeleton / Shimmer ───────────────────────────────────────────────────────
 
-class _SkeletonCard extends StatefulWidget {
+class _Skeleton extends StatefulWidget {
   final Color surface, border;
-  const _SkeletonCard({required this.surface, required this.border});
-  @override State<_SkeletonCard> createState() => _SkeletonCardState();
+  const _Skeleton({required this.surface, required this.border});
+  @override State<_Skeleton> createState() => _SkeletonState();
 }
 
-class _SkeletonCardState extends State<_SkeletonCard> with SingleTickerProviderStateMixin {
-  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
-  late final Animation<double> _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
+class _SkeletonState extends State<_Skeleton> with SingleTickerProviderStateMixin {
+  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
+  late final Animation<double> _a = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
   @override void dispose() { _ac.dispose(); super.dispose(); }
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _anim,
-    builder: (_, __) => Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 14), height: 120,
-      decoration: BoxDecoration(
-        color: widget.surface.withOpacity(0.5 + _anim.value * 0.35),
-        borderRadius: BorderRadius.circular(18), border: Border.all(color: widget.border)),
-    ),
-  );
+  Widget build(BuildContext context) => AnimatedBuilder(animation: _a, builder: (_, __) => Container(
+    margin: const EdgeInsets.fromLTRB(20, 0, 20, 12), height: 96,
+    decoration: BoxDecoration(
+      color: widget.surface.withOpacity(0.4 + _a.value * 0.4),
+      borderRadius: BorderRadius.circular(16), border: Border.all(color: widget.border)),
+  ));
 }
 
 class _ShimmerBox extends StatefulWidget {
@@ -1178,107 +1135,73 @@ class _ShimmerBox extends StatefulWidget {
 }
 
 class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderStateMixin {
-  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))..repeat(reverse: true);
-  late final Animation<double> _anim = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
+  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
+  late final Animation<double> _a = CurvedAnimation(parent: _ac, curve: Curves.easeInOut);
   @override void dispose() { _ac.dispose(); super.dispose(); }
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _anim,
-    builder: (_, __) => Container(
-      width: widget.w, height: widget.h, margin: const EdgeInsets.only(right: 10),
-      decoration: BoxDecoration(
-        color: widget.surface.withOpacity(0.5 + _anim.value * 0.35),
-        borderRadius: BorderRadius.circular(widget.r)),
-    ),
-  );
+  Widget build(BuildContext context) => AnimatedBuilder(animation: _a, builder: (_, __) => Container(
+    width: widget.w, height: widget.h, margin: const EdgeInsets.only(right: 10),
+    decoration: BoxDecoration(color: widget.surface.withOpacity(0.4 + _a.value * 0.4),
+      borderRadius: BorderRadius.circular(widget.r)),
+  ));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SHARED SMALL WIDGETS
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Small Reusable Widgets ───────────────────────────────────────────────────
 
-class _RoundedIconBtn extends StatelessWidget {
-  final IconData icon; final Color surface, border, iconColor; final VoidCallback onTap;
-  const _RoundedIconBtn({required this.icon, required this.surface, required this.border, required this.iconColor, required this.onTap});
+class _IconBtn extends StatelessWidget {
+  final IconData icon; final VoidCallback onTap; final Color surface, border, color;
+  const _IconBtn({required this.icon, required this.onTap, required this.surface, required this.border, required this.color});
   @override
   Widget build(BuildContext context) => GestureDetector(
     onTap: onTap,
-    child: Container(
-      width: 42, height: 42,
-      decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border, width: 1),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))]),
-      child: Icon(icon, color: iconColor, size: 20),
-    ),
+    child: Container(width: 40, height: 40,
+      decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(11), border: Border.all(color: border)),
+      child: Icon(icon, color: color, size: 20)),
   );
 }
 
-class _BadgePill extends StatelessWidget {
+class _Pill extends StatelessWidget {
   final String label; final Color bg;
-  const _BadgePill({required this.label, required this.bg});
+  const _Pill({required this.label, required this.bg});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-    child: Text(label, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 11, color: Colors.white, letterSpacing: 0.2)),
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16)),
+    child: Text(label, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 10, color: Colors.white, letterSpacing: 0.2)),
   );
-}
-
-class _StatCard extends StatelessWidget {
-  final String value, label; final Color surface, border, txt1, txt2;
-  const _StatCard({required this.value, required this.label, required this.surface, required this.border, required this.txt1, required this.txt2});
-  @override
-  Widget build(BuildContext context) => Expanded(child: Container(
-    padding: const EdgeInsets.symmetric(vertical: 14),
-    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: border, width: 1),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
-    child: Column(children: [
-      Text(value, style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 17, color: txt1, letterSpacing: -0.3)),
-      const SizedBox(height: 3),
-      Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: txt2, fontWeight: FontWeight.w500)),
-    ]),
-  ));
 }
 
 class _NavItem extends StatelessWidget {
   final IconData icon; final String label; final int idx, cur; final Color txt2;
   final void Function(int) onTap;
-  const _NavItem({required this.icon, required this.label, required this.idx, required this.cur, required this.txt2, required this.onTap});
+  const _NavItem({required this.icon, required this.label, required this.idx,
+    required this.cur, required this.txt2, required this.onTap});
   @override
   Widget build(BuildContext context) {
     final active = idx == cur;
     return GestureDetector(
       onTap: () => onTap(idx),
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(icon, key: ValueKey(active), size: 24,
-              color: active ? AppColors.forestGreen : txt2)),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 10,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-            color: active ? AppColors.forestGreen : txt2)),
-        ]),
-      ),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(icon, size: 22, color: active ? AppColors.forestGreen : txt2),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(fontFamily: 'Poppins', fontSize: 10,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? AppColors.forestGreen : txt2)),
+      ]),
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PAGE TRANSITION HELPER (shared between files)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Page Transition ──────────────────────────────────────────────────────────
 
-PageRoute<T> _campaignRoute<T>(Widget screen) => PageRouteBuilder(
-  pageBuilder: (_, animation, __) => screen,
-  transitionDuration: const Duration(milliseconds: 400),
-  transitionsBuilder: (_, animation, __, child) {
-    final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+PageRoute<T> _slideRoute<T>(Widget screen) => PageRouteBuilder(
+  pageBuilder: (_, a, __) => screen,
+  transitionDuration: const Duration(milliseconds: 380),
+  transitionsBuilder: (_, a, __, child) {
+    final c = CurvedAnimation(parent: a, curve: Curves.easeOutCubic);
     return SlideTransition(
-      position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(curved),
-      child: FadeTransition(opacity: curved, child: child));
+      position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(c),
+      child: FadeTransition(opacity: c, child: child));
   },
 );
