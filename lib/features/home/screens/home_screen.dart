@@ -315,74 +315,6 @@ class CampaignService {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ANIMATED DONATE BUTTON
-// ═══════════════════════════════════════════════════════════════════════════════
-
-class _AnimatedDonateButton extends StatefulWidget {
-  const _AnimatedDonateButton();
-  @override State<_AnimatedDonateButton> createState() => _AnimatedDonateButtonState();
-}
-
-class _AnimatedDonateButtonState extends State<_AnimatedDonateButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
-  bool _done = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 160));
-    _scale = Tween(begin: 1.0, end: 0.93).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-  @override void dispose() { _ctrl.dispose(); super.dispose(); }
-
-  Future<void> _tap() async {
-    await _ctrl.forward(); await _ctrl.reverse();
-    if (mounted) setState(() => _done = true);
-    await Future.delayed(const Duration(milliseconds: 1800));
-    if (mounted) setState(() => _done = false);
-  }
-
-  @override
-  Widget build(BuildContext context) => ScaleTransition(
-    scale: _scale,
-    child: GestureDetector(
-      onTap: _tap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 280), curve: Curves.easeInOut,
-        height: 46,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: _done ? [const Color(0xFF1A8C52), const Color(0xFF4CC97A)]
-                          : [AppColors.forestGreen, AppColors.limeGreen],
-            begin: Alignment.centerLeft, end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(13),
-          boxShadow: [BoxShadow(color: AppColors.midGreen.withOpacity(_done ? 0.22 : 0.38), blurRadius: 12, offset: const Offset(0, 4))],
-        ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-            child: _done
-                ? const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18, key: ValueKey('ok'))
-                : const Text('💚', style: TextStyle(fontSize: 15), key: ValueKey('h')),
-          ),
-          const SizedBox(width: 8),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: Text(_done ? 'Donated! 🎉' : 'Donate Now',
-              key: ValueKey(_done),
-              style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white)),
-          ),
-        ]),
-      ),
-    ),
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // HOME SCREEN
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -644,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     slivers: [
       SliverToBoxAdapter(child: _topBar()),
       SliverToBoxAdapter(child: _searchBar()),
-      SliverToBoxAdapter(child: _statsRow()),
+      // SliverToBoxAdapter(child: _statsRow()),
       SliverToBoxAdapter(child: _sectionLabel('Featured campaigns')),
       SliverToBoxAdapter(child: _featuredCarousel()),
       SliverToBoxAdapter(child: _sectionLabel('Browse by category')),
@@ -671,14 +603,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // ── Top bar — reads user name from AuthProvider ─────────────────────────────
   Widget _topBar() {
     final auth = context.watch<AuthProvider>();
-    final displayName = auth.user?.username ?? auth.user?.fullName ?? 'there';
+    final displayName = auth.user?.username ?? auth.user?.fullName ?? 'Guest';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(_greeting, style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2, fontWeight: FontWeight.w400)),
           const SizedBox(height: 2),
-          Text('Karibu, $displayName 👋',
+          Text('$displayName 👋',
             style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w900, fontSize: 24, color: txt1, letterSpacing: -0.5, height: 1.15)),
           const SizedBox(height: 3),
           Text('What cause will you support today?', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: txt2)),
@@ -688,11 +620,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           onTap: () => setState(() => _searchActive = true)),
         const SizedBox(width: 8),
         // Dark mode toggle
-        _RoundedIconBtn(
-          icon: _isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-          surface: surface, border: border, iconColor: txt1,
-          onTap: () => setState(() => _isDark = !_isDark),
-        ),
+        // _RoundedIconBtn(
+        //   icon: _isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+        //   surface: surface, border: border, iconColor: txt1,
+        //   onTap: () => setState(() => _isDark = !_isDark),
+        // ),
         const SizedBox(width: 8),
         Stack(clipBehavior: Clip.none, children: [
           _RoundedIconBtn(icon: Icons.notifications_outlined, surface: surface, border: border, iconColor: txt1,
@@ -736,22 +668,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ),
   );
 
-  Widget _statsRow() {
-    final totalRaised = _campaigns.fold<double>(0, (s, c) => s + c.amountRaised);
-    final totalDonors = _campaigns.fold<int>(0, (s, c) => s + c.donorCount);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-      child: Row(children: [
-        _StatCard(value: _campaigns.isEmpty ? '—' : _campaigns.length.toString(), label: 'Campaigns', surface: surface, border: border, txt1: txt1, txt2: txt2),
-        const SizedBox(width: 10),
-        _StatCard(value: _kes(totalRaised), label: 'Total raised', surface: surface, border: border, txt1: txt1, txt2: txt2),
-        const SizedBox(width: 10),
-        _StatCard(
-          value: totalDonors >= 1000 ? '${(totalDonors / 1000).toStringAsFixed(1)}K' : totalDonors.toString(),
-          label: 'Donors', surface: surface, border: border, txt1: txt1, txt2: txt2),
-      ]),
-    );
-  }
+  // Widget _statsRow() {
+  //   final totalRaised = _campaigns.fold<double>(0, (s, c) => s + c.amountRaised);
+  //   final totalDonors = _campaigns.fold<int>(0, (s, c) => s + c.donorCount);
+  //   return Padding(
+  //     padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+  //     child: Row(children: [
+  //       _StatCard(value: _campaigns.isEmpty ? '—' : _campaigns.length.toString(), label: 'Campaigns', surface: surface, border: border, txt1: txt1, txt2: txt2),
+  //       const SizedBox(width: 10),
+  //       _StatCard(value: _kes(totalRaised), label: 'Total raised', surface: surface, border: border, txt1: txt1, txt2: txt2),
+  //       const SizedBox(width: 10),
+  //       _StatCard(
+  //         value: totalDonors >= 1000 ? '${(totalDonors / 1000).toStringAsFixed(1)}K' : totalDonors.toString(),
+  //         label: 'Donors', surface: surface, border: border, txt1: txt1, txt2: txt2),
+  //     ]),
+  //   );
+  // }
 
   Widget _sectionLabel(String text) => Padding(
     padding: const EdgeInsets.fromLTRB(20, 24, 20, 14),
@@ -764,7 +696,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _featuredCarousel() => Column(children: [
     SizedBox(
-      height: 330,
+      height: 360,
       child: _loadingFeatured
           ? _shimmerCarousel()
           : _featured.isEmpty ? const SizedBox()
@@ -992,7 +924,7 @@ class _FeaturedCard extends StatelessWidget {
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(children: [
-        SizedBox(height: 170, child: Stack(children: [
+        SizedBox(height: 155, child: Stack(children: [
           Positioned.fill(child: c.featuredImage != null
               ? Image.network(c.featuredImage!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _gradBg())
               : _gradBg()),
@@ -1007,20 +939,20 @@ class _FeaturedCard extends StatelessWidget {
             Positioned(top: 10, right: 14, child: TierMedalBadge(tier: c.tier, size: 36)),
         ])),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (c.creatorName != null) Text('by ${c.creatorName}', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(c.title, maxLines: 2, overflow: TextOverflow.ellipsis,
               style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 16, color: txt1, height: 1.3)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: progress),
               duration: const Duration(milliseconds: 900), curve: Curves.easeOutCubic,
               builder: (_, val, __) => ClipRRect(borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(value: val, minHeight: 8, backgroundColor: border,
                   valueColor: const AlwaysStoppedAnimation(AppColors.midGreen)))),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             Row(children: [
               RichText(text: TextSpan(children: [
                 TextSpan(text: kes(c.amountRaised), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.midGreen)),
@@ -1030,10 +962,10 @@ class _FeaturedCard extends StatelessWidget {
               Text('${c.completionPercentage.toStringAsFixed(0)}%',
                 style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.savanna)),
             ]),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text('${c.donorCount} donors · ${c.daysRemaining} days left', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
-            const SizedBox(height: 14),
-            const SizedBox(width: double.infinity, child: _AnimatedDonateButton()),
+            const SizedBox(height: 10),
+           
           ]),
         ),
       ]),
@@ -1143,7 +1075,8 @@ class _ActiveCampaignCard extends StatelessWidget {
             Text('${c.donorCount} donors · ${c.completionPercentage.toStringAsFixed(0)}% funded',
               style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
             const SizedBox(height: 14),
-            const SizedBox(width: double.infinity, child: _AnimatedDonateButton()),
+            
+
           ]),
         ),
       ]),
