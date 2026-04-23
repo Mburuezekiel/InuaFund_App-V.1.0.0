@@ -230,18 +230,29 @@ class CampaignService {
 }
 
 // ─── Category data ────────────────────────────────────────────────────────────
-
 const _kCategories = [
-  {'label': 'All',         'icon': Icons.apps_rounded,            'emoji': '🌍'},
-  {'label': 'medical',     'icon': Icons.favorite_rounded,        'emoji': '🏥'},
-  {'label': 'education',   'icon': Icons.school_rounded,          'emoji': '📚'},
-  {'label': 'community',   'icon': Icons.people_rounded,          'emoji': '🤝'},
-  {'label': 'emergencies', 'icon': Icons.warning_amber_rounded,   'emoji': '🚨'},
-  {'label': 'water',       'icon': Icons.water_drop_rounded,      'emoji': '💧'},
-  {'label': 'environment', 'icon': Icons.eco_rounded,             'emoji': '🌿'},
-  {'label': 'food',        'icon': Icons.restaurant_rounded,      'emoji': '🍽️'},
-  {'label': 'shelter',     'icon': Icons.home_rounded,            'emoji': '🏠'},
-  {'label': 'children',    'icon': Icons.child_care_rounded,      'emoji': '👶'},
+  {'label': 'All',         'icon': Icons.apps_rounded},
+  {'label': 'business',    'icon': Icons.business_rounded},
+  {'label': 'community',   'icon': Icons.people_rounded},
+  {'label': 'education',   'icon': Icons.school_rounded},
+  {'label': 'agriculture', 'icon': Icons.local_florist_rounded},
+  {'label': 'animals',     'icon': Icons.pets_rounded},
+  {'label': 'arts',        'icon': Icons.palette_rounded},
+  {'label': 'competitions','icon': Icons.emoji_events_rounded},
+  {'label': 'creative',    'icon': Icons.lightbulb_rounded},
+  {'label': 'emergencies', 'icon': Icons.warning_amber_rounded},
+  {'label': 'environment', 'icon': Icons.eco_rounded},
+  {'label': 'events',      'icon': Icons.event_rounded},
+  {'label': 'faith',       'icon': Icons.church_rounded},
+  {'label': 'family',      'icon': Icons.family_restroom_rounded},
+  {'label': 'medical',     'icon': Icons.favorite_rounded},
+  {'label': 'memorial',    'icon': Icons.local_florist_rounded},
+  {'label': 'non-profit',  'icon': Icons.volunteer_activism_rounded},
+  {'label': 'technology',  'icon': Icons.devices_rounded},
+  {'label': 'travel',      'icon': Icons.flight_rounded},
+  {'label': 'volunteer',   'icon': Icons.handshake_rounded},
+  {'label': 'water',       'icon': Icons.water_drop_rounded},
+  {'label': 'wishes',      'icon': Icons.star_rounded},
 ];
 
 // ─── HomeScreen ───────────────────────────────────────────────────────────────
@@ -654,64 +665,99 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     itemCount: 2, itemBuilder: (_, __) => _ShimmerBox(w: 280, h: 180, r: 16, surface: surface));
 
  // ── Browse by Category – horizontal oval chips ──────────────────────────
-  Widget _categoryGrid() {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: _kCategories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final cat   = _kCategories[i];
-          final label = cat['label'] as String;
-          final icon  = cat['icon'] as IconData;
-          final sel   = _selectedCategory == label;
+  // ── Browse by Category – staggered 3-row oval chips ─────────────────────
+Widget _categoryGrid() {
+  // Split categories into 3 rows as evenly as possible
+  final int total = _kCategories.length;
+  final int rowSize = (total / 3).ceil();
 
-          return GestureDetector(
-            onTap: () => _onCategoryTap(label),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: sel ? AppColors.midGreen : surface,
-                borderRadius: BorderRadius.circular(50), // full pill/oval
-                border: Border.all(
-                  color: sel ? AppColors.midGreen : border,
-                  width: sel ? 1.5 : 1,
-                ),
-                boxShadow: sel
-                    ? [BoxShadow(color: AppColors.midGreen.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
-                    : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 1))],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 14,
-                    color: sel ? Colors.white : txt2,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    label == 'All' ? 'All' : _capFirst(label),
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: sel ? Colors.white : txt2,
-                    ),
-                  ),
-                ],
+  final List<List<Map<String, dynamic>>> rows = [
+    _kCategories.sublist(0, rowSize).cast<Map<String, dynamic>>(),
+    _kCategories.sublist(rowSize, (rowSize * 2).clamp(0, total)).cast<Map<String, dynamic>>(),
+    _kCategories.sublist((rowSize * 2).clamp(0, total), total).cast<Map<String, dynamic>>(),
+  ];
+
+  // Offsets to create the staggered / non-linear feel
+  final List<double> rowOffsets = [0, 24, 10];
+
+  Widget buildChip(Map<String, dynamic> cat) {
+    final label = cat['label'] as String;
+    final icon  = cat['icon'] as IconData;
+    final sel   = _selectedCategory == label;
+
+    return GestureDetector(
+      onTap: () => _onCategoryTap(label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: sel ? AppColors.midGreen : surface,
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(
+            color: sel ? AppColors.midGreen : border,
+            width: sel ? 1.5 : 1,
+          ),
+          boxShadow: sel
+              ? [BoxShadow(
+                  color: AppColors.midGreen.withOpacity(0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                )]
+              : [BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                )],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: sel ? Colors.white : txt2),
+            const SizedBox(width: 5),
+            Text(
+              _capFirst(label),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                color: sel ? Colors.white : txt2,
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
-  
+
+  return SizedBox(
+    height: 130, // enough for 3 rows + spacing + offsets
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(rows.length, (rowIndex) {
+          return Padding(
+            padding: EdgeInsets.only(
+              top: rowIndex == 0 ? 0 : 8,
+              left: rowOffsets[rowIndex], // stagger each row
+            ),
+            child: Row(
+              children: rows[rowIndex].map((cat) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: buildChip(cat),
+                );
+              }).toList(),
+            ),
+          );
+        }),
+      ),
+    ),
+  );
+}
+
   String _capFirst(String s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
   // ── Campaigns Header ──────────────────────────────────────────────────────
@@ -745,6 +791,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   );
 
   // ── Bottom Nav — FAB lives HERE as a raised loop circle ──────────────────
+ // ── Bottom Nav — FAB lives HERE as a raised loop circle ──────────────────
   Widget _buildNav() {
     return Container(
       decoration: BoxDecoration(
@@ -756,26 +803,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: SizedBox(
           height: 64,
           child: Row(children: [
-            // Home
-            Expanded(child: _NavItem(icon: Icons.home_rounded, label: 'Home', idx: 0, cur: _navIndex, txt2: txt2, onTap: _onNav)),
-            // Explore
-            Expanded(child: _NavItem(icon: Icons.explore_rounded, label: 'Explore', idx: 1, cur: _navIndex, txt2: txt2, onTap: _onNav)),
+            Expanded(child: _NavItem(icon: Icons.home_rounded,           label: 'Home',    idx: 0, cur: _navIndex, txt2: txt2, onTap: _onNav)),
+            Expanded(child: _NavItem(icon: Icons.explore_rounded,        label: 'Explore', idx: 1, cur: _navIndex, txt2: txt2, onTap: _onNav)),
 
-            // ── Centre FAB — loop/circle raised above the bar ──────────────
+            // ── Centre FAB ────────────────────────────────────────────
             SizedBox(
               width: 72,
               child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-                // Arch outline drawn around the circle — gives the "loop" / arch shape
                 Positioned(
-                  top: -18,
+                  top: -8,
                   child: CustomPaint(
                     size: const Size(72, 40),
                     painter: _NavArchPainter(color: surface, borderColor: border),
                   ),
                 ),
-                // The FAB button itself
                 Positioned(
-                  top: -24,
+                  top: -12,
                   child: GestureDetector(
                     onTap: _openCreate,
                     child: Container(
@@ -794,25 +837,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                // Label below
-                Positioned(
-                  bottom: 6,
-                  child: Text('Create',
-                    style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w600, color: txt2)),
-                ),
               ]),
             ),
 
-            // Alerts
-            Expanded(child: _NavItem(icon: Icons.notifications_outlined, label: 'Alerts', idx: 3, cur: _navIndex, txt2: txt2, onTap: _onNav)),
-            // Profile
+            Expanded(child: _NavItem(icon: Icons.notifications_outlined, label: 'Alerts',  idx: 3, cur: _navIndex, txt2: txt2, onTap: _onNav)),
             Expanded(child: _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4, cur: _navIndex, txt2: txt2, onTap: _onNav)),
           ]),
         ),
       ),
     );
   }
-}
+} // ← closes _HomeScreenState
+
 
 // ─── Nav Arch Painter — draws the arch/loop cutout outline ───────────────────
 
