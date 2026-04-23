@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+
 
 import '../../../../core/network/auth_service.dart';
 import '../../campaign/screens/create_campaign.dart';
@@ -499,16 +501,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // ── Handle bottom nav taps ─────────────────────────────────────────────────
   void _onNavTap(int idx) {
-    if (idx == 0) { setState(() => _navIndex = 0); return; } // Home — stay
-    if (_navRoutes.containsKey(idx)) {
-      setState(() => _navIndex = idx);
-      // Push named route — these should be registered in your MaterialApp.routes
-      Navigator.pushNamed(context, _navRoutes[idx]!).then((_) {
-        // Reset nav highlight when we come back
-        setState(() => _navIndex = 0);
-      });
-    }
+  if (idx == 0) { setState(() => _navIndex = 0); return; }
+  
+  switch (idx) {
+    case 1: context.push('/explore'); break;   // ⚠️ add GoRoute for this
+    case 3: context.push('/alerts');  break;
+    case 4: context.push('/profile'); break;
   }
+  setState(() => _navIndex = idx);
+}
 
   @override
   void dispose() { _pageCtrl.dispose(); _listCtrl.dispose(); _searchCtrl.dispose(); super.dispose(); }
@@ -586,7 +587,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: Container(
             height: 50, padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(13), border: Border.all(color: border)),
-            child: Center(child: Text('Cancel', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.midGreen))),
+            child: const Center(child: Text('Cancel', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.midGreen))),
           ),
         ),
       ]),
@@ -594,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     const SizedBox(height: 16),
     Expanded(
       child: _searching
-          ? Center(child: CircularProgressIndicator(color: AppColors.midGreen, strokeWidth: 2.5))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.midGreen, strokeWidth: 2.5))
           : _searchQuery.length < 2
               ? _searchHints()
               : _searchResults.isEmpty
@@ -724,7 +725,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             margin: const EdgeInsets.all(6),
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(color: AppColors.midGreen, borderRadius: BorderRadius.circular(10)),
-            child: Row(mainAxisSize: MainAxisSize.min, children: const [
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.tune_rounded, color: Colors.white, size: 14),
               SizedBox(width: 5),
               Text('Filter', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 12, color: Colors.white)),
@@ -999,7 +1000,7 @@ class _FeaturedCard extends StatelessWidget {
             colors: [Colors.transparent, Colors.black.withOpacity(0.22)],
             begin: Alignment.topCenter, end: Alignment.bottomCenter)))),
           Positioned(top: 14, left: 14, child: Row(children: [
-            if (c.urgencyLevel == 'high') ...[_BadgePill(label: 'URGENT', bg: AppColors.crimson), const SizedBox(width: 6)],
+            if (c.urgencyLevel == 'high') ...[const _BadgePill(label: 'URGENT', bg: AppColors.crimson), const SizedBox(width: 6)],
             _BadgePill(label: c.category.toUpperCase(), bg: AppColors.midGreen),
           ])),
           if (c.tier != CampaignTier.none)

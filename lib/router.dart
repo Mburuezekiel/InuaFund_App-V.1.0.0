@@ -4,7 +4,9 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/otp_screen.dart';
 import 'features/home/screens/home_screen.dart';
 
-import 'features//campaign/screens/create_campaign.dart';
+import 'features/campaign/screens/create_campaign.dart';
+import 'features/profile/screens/profile_screen.dart';
+import 'features/notifications/screens/notifications_screen.dart';
 
 
 final appRouter = GoRouter(
@@ -27,6 +29,11 @@ final appRouter = GoRouter(
 
     //campaign routes
     GoRoute(path: '/start-campaign', builder: (_, __) => const StartCampaignScreen()),
-    
+
+    //profile routes
+    GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+
+    //notifications routes
+    GoRoute(path: '/alerts', builder: (_, __) => const NotificationsScreen())    
   ],
 );

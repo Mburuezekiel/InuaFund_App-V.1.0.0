@@ -40,31 +40,31 @@ class _Slide {
 }
 
 final _slides = <_Slide>[
-  _Slide(
+  const _Slide(
     tag: 'FUNDRAISING', title: 'Inua Ndoto', accent: 'Zako',
     subtitle: 'Start a campaign for medical bills, school fees, emergencies '
         'or community projects — trusted by thousands of Kenyans.',
     cta: 'Continue',
     imagePath: 'assets/images/welcome.png',
-    illustration: const _CoinsIllustration(),
+    illustration: _CoinsIllustration(),
     whiteBackground: true,
   ),
-  _Slide(
+  const _Slide(
     tag: 'DONATIONS', title: 'Donate Fast &', accent: 'Securely',
     subtitle: 'Donate via M-Pesa, Airtel Money, credit/debit card and more. '
         'Every shilling reaches the right person — instantly & safely.',
     cta: 'Continue',
     imagePath: 'assets/images/SuccessDonation.jpeg',
-    illustration: const _PayIllustration(),
+    illustration: _PayIllustration(),
     whiteBackground: false,
   ),
-  _Slide(
+  const _Slide(
     tag: 'COMMUNITY', title: 'Pamoja', accent: 'Tunaweza',
     subtitle: 'Join a growing community of Kenyans making a real difference '
         'in their neighbourhoods every single day.',
     imagePath: 'assets/images/crowdfunding.jpeg',
     cta: 'Get Started',
-    illustration: const _CommunityIllustration(),
+    illustration: _CommunityIllustration(),
     whiteBackground: true,
   ),
 ];
@@ -243,7 +243,7 @@ class _State extends State<OnboardingScreen> with SingleTickerProviderStateMixin
 class _SlideVisual extends StatelessWidget {
   final _Slide slide;
   final double topPad;
-  const _SlideVisual({super.key, required this.slide, required this.topPad});
+  const _SlideVisual({required this.slide, required this.topPad});
 
   @override
   Widget build(BuildContext context) {
@@ -599,7 +599,9 @@ class _RealisticCityPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTWH(0, h-18, w, 18), Paint()..color = isLight ? const Color(0xFF4A6275) : const Color(0xFF081510));
     canvas.drawRect(Rect.fromLTWH(0, h-10, w, 10), Paint()..color = isLight ? const Color(0xFF3A5A6A) : const Color(0xFF061409));
     final dashP = Paint()..color = Colors.white.withOpacity(0.22)..strokeWidth = 1.8..strokeCap = StrokeCap.round;
-    for (double dx = 4; dx < w; dx += 26) canvas.drawLine(Offset(dx, h-5), Offset(dx+14, h-5), dashP);
+    for (double dx = 4; dx < w; dx += 26) {
+      canvas.drawLine(Offset(dx, h-5), Offset(dx+14, h-5), dashP);
+    }
     if (!isLight) {
       canvas.drawRect(Rect.fromLTWH(0, h-18, w, 18), Paint()
         ..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -627,8 +629,8 @@ class _CoinsState extends State<_CoinsIllustration> with SingleTickerProviderSta
     return Stack(alignment: Alignment.center, children: [
       Container(width: 200, height: 200, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [_C.green.withOpacity(0.12), Colors.transparent]))),
       Transform.translate(offset: Offset(0, f), child: CustomPaint(size: const Size(200, 200), painter: _CoinPainter())),
-      Positioned(top: 20, right: 14, child: Transform.translate(offset: Offset(0, f * -0.5), child: _Badge('🎯 Goal Reached!', _C.greenLight))),
-      Positioned(bottom: 24, left: 10, child: Transform.translate(offset: Offset(0, f * 0.4), child: _Badge('+KSh 5,000', _C.goldLight))),
+      Positioned(top: 20, right: 14, child: Transform.translate(offset: Offset(0, f * -0.5), child: const _Badge('🎯 Goal Reached!', _C.greenLight))),
+      Positioned(bottom: 24, left: 10, child: Transform.translate(offset: Offset(0, f * 0.4), child: const _Badge('+KSh 5,000', _C.goldLight))),
     ]);
   });
 }
@@ -644,7 +646,9 @@ class _CoinPainter extends CustomPainter {
     }
     final ap = Paint()..color=_C.green..strokeWidth=3..strokeCap=StrokeCap.round..style=PaintingStyle.stroke;
     canvas.drawPath(Path()..moveTo(cx, cy-10)..lineTo(cx, cy-65)..moveTo(cx-15, cy-50)..lineTo(cx, cy-67)..lineTo(cx+15, cy-50), ap);
-    for (final o in [Offset(cx-72,cy-28),Offset(cx+68,cy-14),Offset(cx-52,cy+52),Offset(cx+58,cy+44)]) canvas.drawCircle(o, 5, Paint()..color=_C.green.withOpacity(0.6));
+    for (final o in [Offset(cx-72,cy-28),Offset(cx+68,cy-14),Offset(cx-52,cy+52),Offset(cx+58,cy+44)]) {
+      canvas.drawCircle(o, 5, Paint()..color=_C.green.withOpacity(0.6));
+    }
   }
   @override bool shouldRepaint(_) => false;
 }
@@ -704,7 +708,7 @@ class _CommState extends State<_CommunityIllustration> with SingleTickerProvider
     final g = Tween(begin: 0.93, end: 1.0).evaluate(CurvedAnimation(parent: _c, curve: Curves.easeInOut));
     return Stack(alignment: Alignment.center, children: [
       Transform.scale(scale: g, child: CustomPaint(size: const Size(220, 210), painter: _CommPainter())),
-      Positioned(top: 16, child: _Badge('🇰🇪  12,400+ Kenyans helped', _C.greenLight)),
+      const Positioned(top: 16, child: _Badge('🇰🇪  12,400+ Kenyans helped', _C.greenLight)),
     ]);
   });
 }

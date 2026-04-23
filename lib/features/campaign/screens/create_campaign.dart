@@ -258,7 +258,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
   SubmitStatus _submitStatus = SubmitStatus.idle;
 
   File? _featuredImage;
-  List<File> _gallery = [];
+  final List<File> _gallery = [];
 
   final _tagCtrl     = TextEditingController();
   final _titleCtrl   = TextEditingController();
@@ -554,7 +554,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
   // STEP 1 — DETAILS
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildDetailsStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _FieldLabel('Campaign Title', required: true),
+    const _FieldLabel('Campaign Title', required: true),
     _FieldBox(
       controller: _titleCtrl,
       hint: 'E.g. Help Mama Wanjiku with Cancer Treatment',
@@ -563,7 +563,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       onChanged: (v) { _form.title = v; _errors.remove('title'); },
     ),
     const SizedBox(height: 18),
-    _FieldLabel('Your Story', required: true),
+    const _FieldLabel('Your Story', required: true),
     _StyledTextArea(
       controller: _descCtrl,
       hint: 'Tell donors why this campaign matters, how funds will be used, and who it helps...',
@@ -574,7 +574,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
     const SizedBox(height: 18),
     Row(children: [
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _FieldLabel('Start Date', required: true),
+        const _FieldLabel('Start Date', required: true),
         _DateField(
           controller: _startDateCtrl,
           hint: 'YYYY-MM-DD',
@@ -596,7 +596,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       ])),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _FieldLabel('End Date'),
+        const _FieldLabel('End Date'),
         _DateField(
           controller: _endDateCtrl,
           hint: 'YYYY-MM-DD',
@@ -617,7 +617,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       ])),
     ]),
     const SizedBox(height: 18),
-    _FieldLabel('Tags'),
+    const _FieldLabel('Tags'),
     _TagsField(
       tags: _form.tags,
       controller: _tagCtrl,
@@ -641,7 +641,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
     _SectionCard(
       surface: surface, border: border,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _FieldLabel('Featured Image', required: true),
+        const _FieldLabel('Featured Image', required: true),
         const SizedBox(height: 8),
         _featuredImage == null
             ? _ImagePickerPlaceholder(
@@ -663,7 +663,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       surface: surface, border: border,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          _FieldLabel('Gallery Images'),
+          const _FieldLabel('Gallery Images'),
           const Spacer(),
           Text('${_gallery.length}/5', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
         ]),
@@ -734,10 +734,10 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
         const SizedBox(height: 4),
         Text('Who will receive the funds?', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: txt2)),
         const SizedBox(height: 14),
-        _FieldLabel('Name'),
+        const _FieldLabel('Name'),
         _FieldBox(controller: _collNameCtrl, hint: 'Full name', error: _errors['collName'], onChanged: (v) { _form.collaboratorName = v; _errors.remove('collName'); }),
         const SizedBox(height: 12),
-        _FieldLabel('Email'),
+        const _FieldLabel('Email'),
         _FieldBox(controller: _collEmailCtrl, hint: 'email@example.com', error: _errors['collEmail'], keyboardType: TextInputType.emailAddress, onChanged: (v) { _form.collaboratorEmail = v; _errors.remove('collEmail'); }),
       ])),
     ],
@@ -746,7 +746,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       _SectionCard(surface: surface, border: border, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Charity Details', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w700, fontSize: 14, color: txt1)),
         const SizedBox(height: 12),
-        _FieldLabel('Charity / Organisation Name'),
+        const _FieldLabel('Charity / Organisation Name'),
         _FieldBox(controller: _charityCtrl, hint: 'E.g. Red Cross Kenya', error: _errors['charity'], onChanged: (v) { _form.charityName = v; _errors.remove('charity'); }),
       ])),
     ],
@@ -758,7 +758,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
   Widget _buildLocationStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     _InfoBanner(icon: Icons.info_outline_rounded, text: 'Select the county where funds will be withdrawn.', txt2: txt2),
     const SizedBox(height: 18),
-    _FieldLabel('County / Location', required: true),
+    const _FieldLabel('County / Location', required: true),
     _DropdownField<String>(
       value: _form.location.isEmpty ? null : _form.location,
       hint: 'Select county',
@@ -768,7 +768,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       error: _errors['location'],
     ),
     const SizedBox(height: 18),
-    _FieldLabel('Country'),
+    const _FieldLabel('Country'),
     Container(
       height: 50, padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(color: border.withOpacity(0.4), borderRadius: BorderRadius.circular(13), border: Border.all(color: border)),
@@ -813,7 +813,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
   // STEP 6 — FUNDING
   // ─────────────────────────────────────────────────────────────────────────────
   Widget _buildFundingStep() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _FieldLabel('Fundraising Goal', required: true),
+    const _FieldLabel('Fundraising Goal', required: true),
     Row(children: [
       _DropdownField<String>(
         value: _form.currency,
@@ -869,7 +869,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       ]),
     ])),
     const SizedBox(height: 16),
-    _FieldLabel('Contact Email', required: true),
+    const _FieldLabel('Contact Email', required: true),
     _FieldBox(
       controller: _emailCtrl,
       hint: 'your@email.com',
@@ -879,7 +879,7 @@ class _StartCampaignScreenState extends State<StartCampaignScreen>
       onChanged: (v) { _form.contactEmail = v; _errors.remove('email'); },
     ),
     const SizedBox(height: 14),
-    _FieldLabel('Contact Phone', required: true),
+    const _FieldLabel('Contact Phone', required: true),
     _FieldBox(
       controller: _phoneCtrl,
       hint: '+254 7XX XXX XXX',

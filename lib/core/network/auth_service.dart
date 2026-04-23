@@ -145,7 +145,7 @@ class AuthService {
         .post(Uri.parse(url), headers: headers, body: jsonEncode(body))
         .timeout(const Duration(seconds: 15));
     final decoded = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode >= 500) throw AuthException('Server error. Please try again.');
+    if (res.statusCode >= 500) throw const AuthException('Server error. Please try again.');
     return decoded;
   }
 
@@ -158,7 +158,7 @@ class AuthService {
         .get(Uri.parse(url), headers: headers)
         .timeout(const Duration(seconds: 15));
     final decoded = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode >= 500) throw AuthException('Server error. Please try again.');
+    if (res.statusCode >= 500) throw const AuthException('Server error. Please try again.');
     return decoded;
   }
 
