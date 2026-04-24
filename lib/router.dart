@@ -7,6 +7,9 @@ import 'features/campaign/screens/create_campaign.dart';
 import 'features/profile/screens/profile_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
 
+
+import 'features/campaign/screens/single_campaign_screen.dart';
+
 GoRouter createRouter({required bool showOnboarding}) => GoRouter(
   initialLocation: showOnboarding ? '/onboarding' : '/home',
   routes: [
@@ -27,6 +30,10 @@ GoRouter createRouter({required bool showOnboarding}) => GoRouter(
 
     // Campaign routes
     GoRoute(path: '/start-campaign', builder: (_, __) => const StartCampaignScreen()),
+    GoRoute(path: '/campaigns/:id', builder: (ctx, state) {
+      final id = state.pathParameters['id']!;
+      return SingleCampaignScreen(campaignId: id);
+    }),
 
     // Profile routes
     GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
