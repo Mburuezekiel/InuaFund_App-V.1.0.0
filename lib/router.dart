@@ -8,7 +8,8 @@ import 'features/profile/screens/profile_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
 
 
-import 'features/campaign/screens/single_campaign_screen.dart';
+import 'features/campaign/screens/single_campaign_screen.dart'; 
+import 'features/campaign/screens/explore_campaigns.dart';
 
 GoRouter createRouter({required bool showOnboarding}) => GoRouter(
   initialLocation: showOnboarding ? '/onboarding' : '/home',
@@ -34,7 +35,7 @@ GoRouter createRouter({required bool showOnboarding}) => GoRouter(
       final id = state.pathParameters['id']!;
       return SingleCampaignScreen(campaignId: id);
     }),
-
+    GoRoute(path: '/explore', builder: (_, __) => const ExploreScreen()),    
     // Profile routes
     GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
 
