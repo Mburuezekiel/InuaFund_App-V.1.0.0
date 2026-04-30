@@ -399,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       backgroundColor: bg,
       body: SafeArea(child: _searchActive ? _buildSearch() : _buildMain()),
       // ── No floating FAB — it lives inside the BottomAppBar ──
-      bottomNavigationBar: _searchActive ? null : _buildNav(),
+      // bottomNavigationBar: _searchActive ? null : _buildNav(),
     );
   }
 
@@ -790,63 +790,7 @@ Widget _categoryGrid() {
     ]),
   );
 
-  // ── Bottom Nav — FAB lives HERE as a raised loop circle ──────────────────
- // ── Bottom Nav — FAB lives HERE as a raised loop circle ──────────────────
-  Widget _buildNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.09), blurRadius: 16, offset: const Offset(0, -3))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(children: [
-            Expanded(child: _NavItem(icon: Icons.home_rounded,           label: 'Home',    idx: 0, cur: _navIndex, txt2: txt2, onTap: _onNav)),
-            Expanded(child: _NavItem(icon: Icons.explore_rounded,        label: 'Explore', idx: 1, cur: _navIndex, txt2: txt2, onTap: _onNav)),
 
-            // ── Centre FAB ────────────────────────────────────────────
-            SizedBox(
-              width: 72,
-              child: Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-                Positioned(
-                  top: -8,
-                  child: CustomPaint(
-                    size: const Size(72, 40),
-                    painter: _NavArchPainter(color: surface, borderColor: border),
-                  ),
-                ),
-                Positioned(
-                  top: -12,
-                  child: GestureDetector(
-                    onTap: _openCreate,
-                    child: Container(
-                      width: 52, height: 52,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [AppColors.forestGreen, AppColors.limeGreen],
-                          begin: Alignment.topLeft, end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(color: AppColors.midGreen.withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 5)),
-                        ],
-                      ),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-                    ),
-                  ),
-                ),
-              ]),
-            ),
-
-            Expanded(child: _NavItem(icon: Icons.notifications_outlined, label: 'Alerts',  idx: 3, cur: _navIndex, txt2: txt2, onTap: _onNav)),
-            Expanded(child: _NavItem(icon: Icons.person_outline_rounded, label: 'Profile', idx: 4, cur: _navIndex, txt2: txt2, onTap: _onNav)),
-          ]),
-        ),
-      ),
-    );
-  }
 } // ← closes _HomeScreenState
 
 

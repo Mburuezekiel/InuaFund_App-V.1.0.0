@@ -27,6 +27,7 @@ class AppShell extends StatelessWidget {
         surface: AppColors.white,
         border: AppColors.cloud,
         textColor: AppColors.mist,
+        background: AppColors.white,
       ),
     );
   }

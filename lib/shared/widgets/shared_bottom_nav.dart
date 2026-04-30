@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-
-import '../../core/theme/colors.dart'; // adjust path
+import '../../core/theme/colors.dart';
 
 class SharedBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final VoidCallback onFabTap;
-
-  final Color surface;
-  final Color border;
+  final Color surface;      // pill color    e.g. Color(0xFFF0F2F4)
+  final Color background;   // outer bar bg  e.g. Color(0xFFD0DCE8)
   final Color textColor;
 
   const SharedBottomNav({
@@ -17,123 +15,107 @@ class SharedBottomNav extends StatelessWidget {
     required this.onTap,
     required this.onFabTap,
     required this.surface,
-    required this.border,
-    required this.textColor,
+    required this.background,
+    required this.textColor, required Color border,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.09),
-            blurRadius: 16,
-            offset: const Offset(0, -3),
-          )
-        ],
-      ),
+      color: background,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
-          child: Row(
+          height: 62,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Expanded(
-                child: _NavItem(
-                  icon: Icons.home_rounded,
-                  label: 'Home',
-                  idx: 0,
-                  cur: currentIndex,
-                  txt2: textColor,
-                  onTap: onTap,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  icon: Icons.explore_rounded,
-                  label: 'Explore',
-                  idx: 1,
-                  cur: currentIndex,
-                  txt2: textColor,
-                  onTap: onTap,
+              // ── Single conjoined pill ──
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _ConjoinedPillPainter(
+                    color: surface,
+                    bgColor: background,
+                  ),
                 ),
               ),
 
-              /// 🔥 CENTER FAB
-              SizedBox(
-                width: 72,
-                child: Stack(
-                  alignment: Alignment.center,
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned(
-                      top: -8,
-                      child: CustomPaint(
-                        size: const Size(72, 40),
-                        painter: _NavArchPainter(
-                          color: surface,
-                          borderColor: border,
-                        ),
-                      ),
+              // ── Nav items + FAB in a Row ──
+              Row(
+                children: [
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.home_outlined,
+                      label: 'Home',
+                      idx: 0,
+                      cur: currentIndex,
+                      textColor: textColor,
+                      onTap: onTap,
                     ),
-                    Positioned(
-                      top: -12,
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.explore_outlined,
+                      label: 'Explore',
+                      idx: 1,
+                      cur: currentIndex,
+                      textColor: textColor,
+                      onTap: onTap,
+                    ),
+                  ),
+
+                  // ── FAB slot ──
+                  SizedBox(
+                    width: 72,
+                    child: Center(
                       child: GestureDetector(
                         onTap: onFabTap,
                         child: Container(
-                          width: 52,
-                          height: 52,
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppColors.forestGreen,
-                                AppColors.limeGreen
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: surface,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.midGreen.withOpacity(0.45),
-                                blurRadius: 16,
-                                offset: const Offset(0, 5),
+                                color: Colors.black.withOpacity(0.13),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
                           child: const Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
+                            Icons.add_box_rounded,
+                            color: AppColors.forestGreen,
                             size: 28,
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              Expanded(
-                child: _NavItem(
-                  icon: Icons.notifications_outlined,
-                  label: 'Alerts',
-                  idx: 3,
-                  cur: currentIndex,
-                  txt2: textColor,
-                  onTap: onTap,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  icon: Icons.person_outline_rounded,
-                  label: 'Profile',
-                  idx: 4,
-                  cur: currentIndex,
-                  txt2: textColor,
-                  onTap: onTap,
-                ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.notifications_outlined,
+                      label: 'Alerts',
+                      idx: 3,
+                      cur: currentIndex,
+                      textColor: textColor,
+                      onTap: onTap,
+                    ),
+                  ),
+                  Expanded(
+                    child: _NavItem(
+                      icon: Icons.person_outline_rounded,
+                      label: 'Profile',
+                      idx: 4,
+                      cur: currentIndex,
+                      textColor: textColor,
+                      onTap: onTap,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -142,60 +124,53 @@ class SharedBottomNav extends StatelessWidget {
     );
   }
 }
-class _NavArchPainter extends CustomPainter {
-  final Color color;
-  final Color borderColor;
 
-  const _NavArchPainter({
-    required this.color,
-    required this.borderColor,
-  });
+// Draws one pill with concave bites on both sides of the centre FAB slot
+class _ConjoinedPillPainter extends CustomPainter {
+  final Color color;
+  final Color bgColor;
+
+  const _ConjoinedPillPainter({required this.color, required this.bgColor});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    const r = 32.0;
+    final cx = size.width / 2;
+    final h  = size.height;
+    const slotHalf  = 36.0;  // half-width of the FAB gap
+    const biteDepth = 10.0;  // how deep the concave shoulder cuts in
+    const r         = 28.0;  // pill corner radius
 
-    final fillPath = Path()
-      ..moveTo(0, h)
-      ..lineTo(0, r * 0.7)
-      ..arcToPoint(
-        Offset(w, r * 0.7),
-        radius: const Radius.circular(r + 4),
-        clockwise: false,
-      )
-      ..lineTo(w, h)
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size.width, h),
+        const Radius.circular(r),
+      ));
+
+    // Punch a concave bite into the top of the pill at the centre
+    final bite = Path()
+      ..moveTo(cx - slotHalf - 16, 0)
+      ..quadraticBezierTo(cx - slotHalf,  0, cx - slotHalf + 10, biteDepth)
+      ..quadraticBezierTo(cx, biteDepth + 4, cx + slotHalf - 10, biteDepth)
+      ..quadraticBezierTo(cx + slotHalf,  0, cx + slotHalf + 16, 0)
+      ..lineTo(cx + slotHalf + 16, -10)
+      ..lineTo(cx - slotHalf - 16, -10)
       ..close();
 
-    canvas.drawPath(fillPath, Paint()..color = color);
+    final combined = Path.combine(PathOperation.difference, path, bite);
 
-    final borderPath = Path()
-      ..moveTo(0, r * 0.7)
-      ..arcToPoint(
-        Offset(w, r * 0.7),
-        radius: const Radius.circular(r + 4),
-        clockwise: false,
-      );
-
-    canvas.drawPath(
-      borderPath,
-      Paint()
-        ..color = borderColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0,
-    );
+    canvas.drawPath(combined, Paint()..color = color);
   }
 
   @override
-  bool shouldRepaint(covariant _NavArchPainter old) =>
-      old.color != color || old.borderColor != borderColor;
+  bool shouldRepaint(covariant _ConjoinedPillPainter old) =>
+      old.color != color || old.bgColor != bgColor;
 }
+
 class _NavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final int idx, cur;
-  final Color txt2;
+  final Color textColor;
   final Function(int) onTap;
 
   const _NavItem({
@@ -203,14 +178,13 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.idx,
     required this.cur,
-    required this.txt2,
+    required this.textColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final active = idx == cur;
-
     return GestureDetector(
       onTap: () => onTap(idx),
       behavior: HitTestBehavior.opaque,
@@ -219,16 +193,16 @@ class _NavItem extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 22,
-            color: active ? AppColors.forestGreen : txt2,
+            size: 24,
+            color: active ? AppColors.forestGreen : textColor,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             label,
             style: TextStyle(
               fontSize: 10,
               fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-              color: active ? AppColors.forestGreen : txt2,
+              color: active ? AppColors.forestGreen : textColor,
             ),
           ),
         ],
