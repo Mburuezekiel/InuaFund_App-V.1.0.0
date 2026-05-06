@@ -437,7 +437,7 @@ class _ExploreScreenState extends State<ExploreScreen> with TickerProviderStateM
             // ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Explore Impactful Campaigns', style: TextStyle(
+              const Text('Explore  Campaigns', style: TextStyle(
                 fontFamily: 'Poppins', fontSize: 22, fontWeight: FontWeight.w800,
                 color: AppColors.ink, letterSpacing: -0.5)),
               Text('${_camps.isNotEmpty ? _camps.length : "..."} campaigns found',

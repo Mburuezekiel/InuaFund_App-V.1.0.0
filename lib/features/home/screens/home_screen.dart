@@ -355,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     context: context, backgroundColor: Colors.transparent,
     builder: (_) => _AuthSheet(
       surface: surface, border: border, txt1: txt1, txt2: txt2,
-      onLogin: () { Navigator.pop(context); Navigator.pushNamed(context, '/login'); }),
+      onLogin: () { Navigator.pop(context); context.push('/login'); }),
   );
 
   void _onNav(int idx) {

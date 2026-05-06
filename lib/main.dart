@@ -1,41 +1,50 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'core/theme/app_theme.dart';
+import 'package:provider/provider.dart';
 import 'core/network/auth_service.dart';
 import 'router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final prefs = await SharedPreferences.getInstance();
-  final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+  // Read one-time boot flags before the provider is ready
+  final authState      = await AuthService.instance.getCurrentUser();
+  final showOnboarding = await _checkOnboarding(); // your existing flag logic
 
   runApp(
-    ProviderScope(
-      child: p.MultiProvider(
-        providers: [
-          p.ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ],
-        child: InuaFundApp(showOnboarding: !hasSeenOnboarding),
+    ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: MyApp(
+        showOnboarding: showOnboarding,
+        isLoggedIn: authState.isAuthenticated,
       ),
     ),
   );
 }
 
-class InuaFundApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
   final bool showOnboarding;
-  const InuaFundApp({super.key, required this.showOnboarding});
+  final bool isLoggedIn;
+  const MyApp({super.key, required this.showOnboarding, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
+    // Router is rebuilt whenever authProvider notifies (login / logout)
+    final router = createRouter(
+      showOnboarding: showOnboarding,
+      isLoggedIn: isLoggedIn,
+      authProvider: authProvider,
+    );
+
     return MaterialApp.router(
       title: 'InuaFund',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      routerConfig: createRouter(showOnboarding: showOnboarding),
+      theme: ThemeData.dark(),
+      routerConfig: router,
     );
   }
+}
+
+Future<bool> _checkOnboarding() async {
+  // your SharedPreferences / secure storage check here
+  return false;
 }

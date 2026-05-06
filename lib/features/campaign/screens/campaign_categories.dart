@@ -1,22 +1,21 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class AppColors {
   static const forestGreen = Color(0xFF0B5E35);
-  static const midGreen    = Color(0xFF1A8C52);
-  static const limeGreen   = Color(0xFF4CC97A);
-  static const ink         = Color(0xFF0D0D0D);
-  static const cloud       = Color(0xFFEEEEEE);
-  static const snow        = Color(0xFFF4F6F4);
-  static const white       = Color(0xFFFFFFFF);
-  static const crimson     = Color(0xFFD93025);
-  static const amber       = Color(0xFFE8860A);
-  static const mist        = Color(0xFF8FA896);
-  static const darkMist    = Color(0xFF4D6657);
+  static const midGreen = Color(0xFF1A8C52);
+  static const limeGreen = Color(0xFF4CC97A);
+  static const ink = Color(0xFF0D0D0D);
+  static const cloud = Color(0xFFEEEEEE);
+  static const snow = Color(0xFFF4F6F4);
+  static const white = Color(0xFFFFFFFF);
+  static const darkMist = Color(0xFF4D6657);
 }
 
 class CategoryPage extends StatefulWidget {
   final String category;
-
   const CategoryPage({super.key, required this.category});
 
   @override
@@ -25,11 +24,13 @@ class CategoryPage extends StatefulWidget {
 
 class _CategoryPageState extends State<CategoryPage> {
   bool isLoading = true;
+  bool _isFetching = false;
 
   List<dynamic> campaigns = [];
   List<dynamic> filteredCampaigns = [];
 
   final TextEditingController searchController = TextEditingController();
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -37,8 +38,23 @@ class _CategoryPageState extends State<CategoryPage> {
     fetchCampaigns();
   }
 
+  @override
+  void didUpdateWidget(covariant CategoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category) {
+      fetchCampaigns();
+    }
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   String getCategoryIcon(String category) {
-    final icons = {
+    const icons = {
       "education": "🎓",
       "medical": "🏥",
       "water": "💧",
@@ -52,35 +68,61 @@ class _CategoryPageState extends State<CategoryPage> {
       "sports": "⚽",
       "arts": "🎨",
     };
-
     return icons[category.toLowerCase()] ?? "📋";
   }
 
   Future<void> fetchCampaigns() async {
-    setState(() => isLoading = true);
+    if (_isFetching) return;
+    _isFetching = true;
+
+    if (mounted) setState(() => isLoading = true);
 
     try {
-      // 🔁 Replace with your API call
-      await Future.delayed(const Duration(seconds: 2));
+      final response = await http.get(
+        Uri.parse("https://api.inuafund.co.ke/api/campaigns"),
+      );
 
-      List<dynamic> data = []; // getApprovedCampaigns()
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        List<dynamic> data = decoded['data'] ?? [];
 
-      final filtered = data.where((c) =>
-          (c['category'] ?? '').toLowerCase() ==
-          widget.category.toLowerCase()).toList();
+        final filtered = data.where((c) =>
+            (c['category'] ?? '').toLowerCase() ==
+            widget.category.toLowerCase()).toList();
 
-      setState(() {
-        campaigns = filtered;
-        filteredCampaigns = filtered;
-      });
+        if (!mounted) return;
+
+        setState(() {
+          campaigns = filtered;
+          filteredCampaigns = filtered;
+          isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load");
+      }
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         campaigns = [];
         filteredCampaigns = [];
+        isLoading = false;
       });
-    } finally {
-      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to load campaigns")),
+      );
     }
+
+    _isFetching = false;
+  }
+
+  void _onSearchChanged(String value) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      handleSearch();
+    });
   }
 
   void handleSearch() {
@@ -95,7 +137,11 @@ class _CategoryPageState extends State<CategoryPage> {
       return (c['title'] ?? '').toLowerCase().contains(query) ||
           (c['description'] ?? '').toLowerCase().contains(query) ||
           (c['category'] ?? '').toLowerCase().contains(query) ||
-          (c['targetAmount']?.toString() ?? '').contains(query);
+          (c['targetAmount']?.toString() ?? '').contains(query) ||
+          (c['currentAmount']?.toString() ?? '').contains(query) ||
+          (c['tags'] != null &&
+              (c['tags'] as List)
+                  .any((tag) => tag.toLowerCase().contains(query)));
     }).toList();
 
     setState(() => filteredCampaigns = results);
@@ -103,53 +149,53 @@ class _CategoryPageState extends State<CategoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLarge = MediaQuery.of(context).size.width > 900;
+
     return Scaffold(
       backgroundColor: AppColors.snow,
-
-      /// 🔹 HEADER
       appBar: AppBar(
-        elevation: 0,
         backgroundColor: AppColors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.ink),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           children: [
-            Text(
-              getCategoryIcon(widget.category),
-              style: const TextStyle(fontSize: 22),
-            ),
+            Text(getCategoryIcon(widget.category)),
             const SizedBox(width: 8),
-            Text(
-              "${widget.category} Campaigns",
-              style: const TextStyle(
-                color: AppColors.ink,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                "${widget.category} Campaigns",
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
         ),
       ),
 
-      body: Column(
-        children: [
-          /// 🔍 SEARCH BAR
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+      body: RefreshIndicator(
+        onRefresh: fetchCampaigns,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            /// 🔥 FIXED SEARCH ROW
+            Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: searchController,
-                    onSubmitted: (_) => handleSearch(),
+                    onChanged: _onSearchChanged,
                     decoration: InputDecoration(
                       hintText: "Search campaigns...",
                       filled: true,
                       fillColor: AppColors.white,
                       prefixIcon: const Icon(Icons.search),
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 0),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -157,117 +203,72 @@ class _CategoryPageState extends State<CategoryPage> {
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: handleSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.midGreen,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+
+                /// ✅ FIX: constrain button width
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: handleSearch,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.midGreen,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
+                    child: const Text("Search"),
                   ),
-                  child: const Text("Search"),
                 ),
               ],
             ),
-          ),
 
-          /// 📊 COUNT
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Chip(
-                backgroundColor: AppColors.limeGreen.withOpacity(0.2),
-                label: Text(
-                  "${filteredCampaigns.length} campaigns",
-                  style: const TextStyle(
-                    color: AppColors.forestGreen,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+            const SizedBox(height: 12),
+
+            Chip(
+              backgroundColor: AppColors.limeGreen.withOpacity(0.2),
+              label: Text("${filteredCampaigns.length} campaigns"),
             ),
-          ),
 
-          const SizedBox(height: 10),
-
-          /// 🧾 CONTENT
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredCampaigns.isEmpty
-                    ? _buildEmptyState()
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredCampaigns.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.75,
-                        ),
-                        itemBuilder: (context, index) {
-                          final campaign = filteredCampaigns[index];
-                          return _CampaignCard(campaign: campaign);
-                        },
-                      ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              getCategoryIcon(widget.category),
-              style: const TextStyle(fontSize: 48),
-            ),
             const SizedBox(height: 16),
-            const Text(
-              "No Campaigns Found",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.ink,
+
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (filteredCampaigns.isEmpty)
+              _buildEmptyState()
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredCampaigns.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: isLarge ? 3 : 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.75,
+                ),
+                itemBuilder: (_, i) =>
+                    _CampaignCard(campaign: filteredCampaigns[i]),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Try adjusting your search or start a new campaign.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.darkMist),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.midGreen,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-              ),
-              onPressed: () {},
-              child: const Text("Start Campaign"),
-            )
           ],
         ),
       ),
     );
   }
+
+  Widget _buildEmptyState() {
+    return Column(
+      children: [
+        const SizedBox(height: 40),
+        Text(getCategoryIcon(widget.category),
+            style: const TextStyle(fontSize: 48)),
+        const SizedBox(height: 10),
+        const Text("No Campaigns Found"),
+      ],
+    );
+  }
 }
 
-/// 🧾 CAMPAIGN CARD
 class _CampaignCard extends StatelessWidget {
   final Map campaign;
-
   const _CampaignCard({required this.campaign});
 
   @override
@@ -286,17 +287,14 @@ class _CampaignCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// IMAGE PLACEHOLDER
           Container(
             height: 110,
             decoration: const BoxDecoration(
               color: AppColors.cloud,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(16)),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -306,10 +304,7 @@ class _CampaignCard extends StatelessWidget {
                   campaign['title'] ?? "Campaign Title",
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.ink,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
                 Text(

@@ -1,4 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/otp_screen.dart';
@@ -9,107 +12,142 @@ import 'features/campaign/screens/explore_campaigns.dart';
 import 'features/campaign/screens/campaign_categories.dart';
 import 'features/profile/screens/profile_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
+import 'features/account/my_campaigns.dart';
+import 'features/account/my_donations.dart';
+import 'features/account/withdrwal.dart';
+import 'features/account/FavoritesPage.dart';
 import 'features/shell/app_shell.dart';
+import 'core/network/auth_service.dart';
 
-GoRouter createRouter({required bool showOnboarding}) => GoRouter(
-  initialLocation: showOnboarding ? '/onboarding' : '/home',
-  routes: [
+const _authRoutes = {
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/otp',
+  '/onboarding'
+};
 
-    // ── Auth routes (no nav bar) ──────────────────────────────────────────────
-    GoRoute(
-      path: '/onboarding',
-      builder: (_, __) => const OnboardingScreen(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (_, __) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      builder: (_, __) => const RegisterScreen(),
-    ),
-    GoRoute(
-      path: '/forgot-password',
-      builder: (_, __) => const ForgotPasswordScreen(),
-    ),
-    GoRoute(
-      path: '/otp',
-      builder: (ctx, state) => OtpScreen(phone: state.extra as String),
-    ),
+GoRouter createRouter({
+  required bool showOnboarding,
+  required bool isLoggedIn,
+  required AuthProvider authProvider,
+}) {
+  return GoRouter(
+    initialLocation:
+        showOnboarding ? '/onboarding' : (isLoggedIn ? '/home' : '/login'),
+    refreshListenable:
+        authProvider, // ← re-runs redirect on every auth state change
 
-    // ── Full-screen campaign routes (no nav bar) ──────────────────────────────
-    GoRoute(
-      path: '/campaigns/:id',
-      builder: (ctx, state) => SingleCampaignScreen(
-        campaignId: state.pathParameters['id']!,
+    redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final loggedIn = authProvider.isAuthenticated;
+      final isAuth = _authRoutes.contains(loc);
+
+      if (authProvider.loading) return null; // wait for init
+      if (!loggedIn && !isAuth) return '/login'; // guard protected
+      if (loggedIn && isAuth && loc != '/onboarding')
+        return '/home'; // no back to auth
+      return null;
+    },
+
+    routes: [
+      // ── Auth (no bottom nav) ───────────────────────────────────────────────
+      GoRoute(
+          path: '/onboarding',
+          name: 'onboarding',
+          builder: (_, __) => const OnboardingScreen()),
+      GoRoute(
+          path: '/login',
+          name: 'login',
+          builder: (_, __) => const LoginScreen()),
+      GoRoute(
+          path: '/register',
+          name: 'register',
+          builder: (_, __) => const RegisterScreen()),
+      GoRoute(
+          path: '/forgot-password',
+          name: 'forgotPassword',
+          builder: (_, __) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: '/otp',
+        name: 'otp',
+        builder: (_, state) {
+          final phone = state.extra;
+          return phone is String
+              ? OtpScreen(phone: phone)
+              : const Scaffold(
+                  body: Center(child: Text('Invalid phone number')));
+        },
       ),
-    ),
-    GoRoute(
-      path: '/start-campaign',
-      builder: (_, __) => const StartCampaignScreen(),
-    ),
 
-    // ── Shell — all tabs share SharedBottomNav ────────────────────────────────
-    // Branch index map:
-    //   0 → /home   (Home)
-    //   1 → /explore (Explore + categories)
-    //   2 → /alerts  (Alerts)       ← nav item index 3
-    //   3 → /profile (Profile)      ← nav item index 4
-    //
-    // The centre FAB (nav item index 2) is NOT a branch — AppShell
-    // intercepts onFabTap and calls context.push('/start-campaign').
-    StatefulShellRoute.indexedStack(
-      builder: (ctx, state, shell) => AppShell(navigationShell: shell),
-      branches: [
+      // ── Full-screen (no bottom nav) ────────────────────────────────────────
+      GoRoute(
+        path: '/campaigns/:id',
+        name: 'campaignDetails',
+        builder: (_, state) =>
+            SingleCampaignScreen(campaignId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+          path: '/start-campaign',
+          name: 'startCampaign',
+          builder: (_, __) => const StartCampaignScreen()),
 
-        // Branch 0 — Home (nav index 0)
-        StatefulShellBranch(
-          routes: [
+      // ── Shell (bottom nav) ─────────────────────────────────────────────────
+      StatefulShellRoute.indexedStack(
+        builder: (_, __, shell) => AppShell(navigationShell: shell),
+        branches: [
+          StatefulShellBranch(routes: [
             GoRoute(
-              path: '/home',
-              builder: (_, __) => const HomeScreen(),
-            ),
-          ],
-        ),
-
-        // Branch 1 — Explore (nav index 1)
-        // /categories/:category is nested here so it stays inside the shell
-        // and the nav bar remains visible while browsing a category.
-        StatefulShellBranch(
-          routes: [
+                path: '/home',
+                name: 'home',
+                builder: (_, __) => const HomeScreen()),
+          ]),
+          StatefulShellBranch(routes: [
             GoRoute(
-              path: '/explore',
-              builder: (_, __) => const ExploreScreen(),
-            ),
+                path: '/explore',
+                name: 'explore',
+                builder: (_, __) => const ExploreScreen()),
             GoRoute(
               path: '/categories/:category',
-              builder: (ctx, state) => CategoryPage(
-                category: state.pathParameters['category']!,
-              ),
+              name: 'category',
+              builder: (_, state) =>
+                  CategoryPage(category: state.pathParameters['category']!),
             ),
-          ],
-        ),
-
-        // Branch 2 — Alerts (nav index 3)
-        StatefulShellBranch(
-          routes: [
+          ]),
+          StatefulShellBranch(routes: [
             GoRoute(
-              path: '/alerts',
-              builder: (_, __) => const NotificationsScreen(),
-            ),
-          ],
-        ),
-
-        // Branch 3 — Profile (nav index 4)
-        StatefulShellBranch(
-          routes: [
+                path: '/alerts',
+                name: 'alerts',
+                builder: (_, __) => const NotificationsScreen()),
+          ]),
+          StatefulShellBranch(routes: [
             GoRoute(
-              path: '/profile',
-              builder: (_, __) => const ProfileScreen(),
+                path: '/profile',
+                name: 'profile',
+                builder: (_, __) => const ProfileScreen()),
+            GoRoute(
+                path: '/profile/my-campaigns',
+                name: 'myCampaigns',
+                builder: (_, __) => const MyCampaignsScreen()),
+            GoRoute(
+                path: '/profile/my-donations',
+                name: 'myDonations',
+                builder: (_, __) => const DonationsScreen()),
+            //GoRoute(path: '/campaigns/:id/withdraw',   name: 'withdrawal',  builder: (_, __) => const WithdrawalScreen(campaignId: '')),
+            GoRoute(
+              path: '/profile/withdrawal/:campaignId',
+              name: 'withdrawal',
+              builder: (_, state) => WithdrawalScreen(
+                  campaignId: state.pathParameters['campaignId'] ?? ''),
             ),
-          ],
-        ),
-      ],
-    ),
-  ],
-);
+            GoRoute(
+              path: '/favorites',
+              name: 'favorites',
+              builder: (_, __) => const FavoritesScreen(),
+            ),
+          ]),
+        ],
+      ),
+    ],
+  );
+}

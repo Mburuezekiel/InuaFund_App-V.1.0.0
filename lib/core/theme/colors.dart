@@ -51,4 +51,6 @@ class AppColors {
   static const tierSilver2 = Color(0xFFB0B0B0);
   static const tierBronze1 = Color(0xFFCD7F32);
   static const tierBronze2 = Color(0xFFA0522D);
+
+ 
 }

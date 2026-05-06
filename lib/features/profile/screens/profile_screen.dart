@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
@@ -101,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final ok = await showDialog<bool>(context: context, builder: (_) => _LogoutDialog());
     if (ok != true || !mounted) return;
     await context.read<AuthProvider>().logout();
-    if (mounted) Navigator.pushNamedAndRemoveUntil(context, '/login', (_)=>false);
+    if (mounted) context.pushAndRemoveUntil(context, '/login', (_)=>false);
   }
 
   @override
@@ -282,10 +283,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Quick Actions ─────────────────────────────────────────────────────────
   Widget _quickActions() {
     final items = [
-      {'label':'My Campaigns','icon':Icons.campaign_rounded,           'color':_C.g600,              'route':'/account/settings/my-campaigns'},
-      {'label':'My Donations','icon':Icons.volunteer_activism_rounded, 'color':_C.amber,             'route':'/account/donations'},
+      {'label':'My Campaigns','icon':Icons.campaign_rounded,           'color':_C.g600,              'route':'/profile/my-campaigns'},
+       {'label':'Favourites',  'icon':Icons.favorite_rounded,           'color':_C.red,               'route':'/favorites'},
+      {'label':'My Donations','icon':Icons.volunteer_activism_rounded, 'color':_C.amber,             'route':'/profile/my-donations'},
       {'label':'Impact Report','icon':Icons.bar_chart_rounded,         'color':const Color(0xFF6A1B9A),'route':'/impact/report'},
-      {'label':'Favourites',  'icon':Icons.favorite_rounded,           'color':_C.red,               'route':'/favorites'},
+     
     ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(20,20,20,0),
@@ -299,7 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           itemBuilder: (_,i) {
             final a = items[i];
             return GestureDetector(
-              onTap: () => Navigator.pushNamed(context, a['route'] as String),
+              onTap: () => context.push(a['route'] as String),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal:14, vertical:12),
                 decoration: BoxDecoration(color:_C.card, borderRadius:BorderRadius.circular(14), border:Border.all(color:_C.bdr),
@@ -333,13 +335,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _sRow(Icons.person_rounded,         'Edit Profile',       onTap: _showEditSheet),
           _sRow(Icons.email_rounded,           'Email Verified',     trailing: _chip(u?.emailVerified ?? false)),
           _sRow(Icons.shield_rounded,          '2-Factor Auth',      trailing: _chip(u?.twoFactorEnabled ?? false)),
-          _sRow(Icons.lock_reset_rounded,      'Change Password',    onTap: () => Navigator.pushNamed(context, '/forgot-password')),
+          _sRow(Icons.lock_reset_rounded,      'Change Password',    onTap: () => context.push('/forgot-password')),
           ]),
         const SizedBox(height: 20),
         _sectionLabel('Appearance'),
         const SizedBox(height: 10),
         _settingsCard([
-          _sRow(Icons.notifications_rounded,   'Notifications',      onTap: () => Navigator.pushNamed(context, '/notifications')),
+          _sRow(Icons.notifications_rounded,   'Notifications',      onTap: () => context.push('/notifications')),
           _sRow(Icons.color_lens_rounded,      'Theme',              onTap: () {}),
           
         ]),
@@ -420,6 +422,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onSaved: () { _load(); Navigator.pop(context); },
     ),
   );
+}
+
+extension on BuildContext {
+  void pushAndRemoveUntil(BuildContext context, String s, bool Function(_) param2) {}
+}
+
+class _ {
 }
 
 // ════════════════════════════════════════════════════════════════════════════

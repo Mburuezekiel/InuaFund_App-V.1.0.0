@@ -362,7 +362,9 @@ class _SCState extends State<SingleCampaignScreen> with SingleTickerProviderStat
                 // ── Sections
                 _Sec('About this Campaign', Icons.info_outline_rounded,
                     _ExpandText(text: c.desc)),
-                _Sec('Campaign Details', Icons.list_alt_rounded, _InfoRows(c: c)),
+                    
+                     _Sec('Updates', Icons.campaign_outlined, _Updates(c: c)),
+                
                 _Sec('Organiser', Icons.account_circle_outlined,
                     _Organiser(c: c,
                       onEmail: c.email != null ? () {
@@ -375,10 +377,11 @@ class _SCState extends State<SingleCampaignScreen> with SingleTickerProviderStat
                     _Gallery(imgs: imgs)),
                 _Sec('Community & Support', Icons.people_outline_rounded,
                     _Community(c: c, fmt: _fmt, onDonate: _donate)),
-                _Sec('Updates', Icons.campaign_outlined, _Updates(c: c)),
+               
 
                 if (c.days > 0) ...[const SizedBox(height: 4), _UrgencyBanner(c: c)],
                 const SizedBox(height: 24),
+                _Sec('Campaign Details', Icons.list_alt_rounded, _InfoRows(c: c)),
 
                 // ── Similar
                 if (_sim.isNotEmpty) ...[
@@ -460,7 +463,7 @@ class _HeroState extends State<_Hero> {
       SafeArea(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(children: [
           _Btn(icon: Icons.arrow_back_rounded, onTap: widget.onBack,
-              bg: Colors.black38, fg: Colors.white),
+              bg: const Color.fromARGB(96, 78, 244, 1), fg: Colors.white),
           const Spacer(),
           _Btn(icon: Icons.share_rounded, onTap: widget.onShare,
               bg: Colors.black38, fg: Colors.white),
@@ -581,11 +584,11 @@ class _Actions extends StatelessWidget {
   Widget build(_) => Row(children: [
     Expanded(child: c.canDonate
       ? SizedBox(height: 52, child: ElevatedButton.icon(onPressed: onDonate,
-          icon: const Icon(Icons.favorite_rounded, size: 17),
+          icon: const Icon(Icons.favorite_rounded, size: 15),
           label: const Text('Donate Now', style: TextStyle(fontFamily: 'Poppins',
               fontWeight: FontWeight.w700, fontSize: 14)),
           style: ElevatedButton.styleFrom(backgroundColor: _fg, foregroundColor: Colors.white,
-              elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)))))
+              elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)))))
       : Container(height: 52,
           decoration: BoxDecoration(color: const Color(0xFFFEF2F2),
               borderRadius: BorderRadius.circular(16),
