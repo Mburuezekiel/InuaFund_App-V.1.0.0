@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
 import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/otp_screen.dart';
+
 import 'features/home/screens/home_screen.dart';
+
 import 'features/campaign/screens/create_campaign.dart';
 import 'features/campaign/screens/single_campaign_screen.dart';
 import 'features/campaign/screens/explore_campaigns.dart';
 import 'features/campaign/screens/campaign_categories.dart';
+
 import 'features/profile/screens/profile_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
+
 import 'features/account/my_campaigns.dart';
 import 'features/account/my_donations.dart';
 import 'features/account/withdrwal.dart';
 import 'features/account/FavoritesPage.dart';
+
 import 'features/shell/app_shell.dart';
+
 import 'core/network/auth_service.dart';
 
 const _authRoutes = {
@@ -24,7 +29,7 @@ const _authRoutes = {
   '/register',
   '/forgot-password',
   '/otp',
-  '/onboarding'
+  '/onboarding',
 };
 
 GoRouter createRouter({
@@ -35,114 +40,126 @@ GoRouter createRouter({
   return GoRouter(
     initialLocation:
         showOnboarding ? '/onboarding' : (isLoggedIn ? '/home' : '/login'),
-    refreshListenable:
-        authProvider, // ← re-runs redirect on every auth state change
+
+    refreshListenable: authProvider,
 
     redirect: (context, state) {
       final loc = state.matchedLocation;
       final loggedIn = authProvider.isAuthenticated;
-      final isAuth = _authRoutes.contains(loc);
+      final isAuthRoute = _authRoutes.contains(loc);
 
-      if (authProvider.loading) return null; // wait for init
-      if (!loggedIn && !isAuth) return '/login'; // guard protected
-      if (loggedIn && isAuth && loc != '/onboarding')
-        return '/home'; // no back to auth
+      // Wait until auth is initialized
+      if (authProvider.loading) return null;
+
+      // 🚫 Not logged in → block protected routes
+      if (!loggedIn && !isAuthRoute) {
+        return '/login';
+      }
+
+      // 🚫 Logged in → prevent going back to auth screens
+      if (loggedIn && isAuthRoute && loc != '/onboarding') {
+        return '/home';
+      }
+
       return null;
     },
 
     routes: [
-      // ── Auth (no bottom nav) ───────────────────────────────────────────────
+      // ───────── AUTH ─────────
       GoRoute(
-          path: '/onboarding',
-          name: 'onboarding',
-          builder: (_, __) => const OnboardingScreen()),
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
       GoRoute(
-          path: '/login',
-          name: 'login',
-          builder: (_, __) => const LoginScreen()),
+        path: '/login',
+        builder: (_, __) => const LoginScreen(),
+      ),
       GoRoute(
-          path: '/register',
-          name: 'register',
-          builder: (_, __) => const RegisterScreen()),
+        path: '/register',
+        builder: (_, __) => const RegisterScreen(),
+      ),
       GoRoute(
-          path: '/forgot-password',
-          name: 'forgotPassword',
-          builder: (_, __) => const ForgotPasswordScreen()),
+        path: '/forgot-password',
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
       GoRoute(
         path: '/otp',
-        name: 'otp',
         builder: (_, state) {
           final phone = state.extra;
           return phone is String
               ? OtpScreen(phone: phone)
               : const Scaffold(
-                  body: Center(child: Text('Invalid phone number')));
+                  body: Center(child: Text('Invalid phone number')),
+                );
         },
       ),
 
-      // ── Full-screen (no bottom nav) ────────────────────────────────────────
+      // ───────── FULL SCREEN ─────────
       GoRoute(
         path: '/campaigns/:id',
-        name: 'campaignDetails',
         builder: (_, state) =>
             SingleCampaignScreen(campaignId: state.pathParameters['id']!),
       ),
       GoRoute(
-          path: '/start-campaign',
-          name: 'startCampaign',
-          builder: (_, __) => const StartCampaignScreen()),
+        path: '/start-campaign',
+        builder: (_, __) => const StartCampaignScreen(),
+      ),
 
-      // ── Shell (bottom nav) ─────────────────────────────────────────────────
+      // ───────── SHELL (BOTTOM NAV) ─────────
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => AppShell(navigationShell: shell),
         branches: [
+          // HOME
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/home',
-                name: 'home',
-                builder: (_, __) => const HomeScreen()),
+              path: '/home',
+              builder: (_, __) => const HomeScreen(),
+            ),
           ]),
+
+          // EXPLORE
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/explore',
-                name: 'explore',
-                builder: (_, __) => const ExploreScreen()),
+              path: '/explore',
+              builder: (_, __) => const ExploreScreen(),
+            ),
             GoRoute(
               path: '/categories/:category',
-              name: 'category',
               builder: (_, state) =>
                   CategoryPage(category: state.pathParameters['category']!),
             ),
           ]),
+
+          // NOTIFICATIONS
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/alerts',
-                name: 'alerts',
-                builder: (_, __) => const NotificationsScreen()),
+              path: '/alerts',
+              builder: (_, __) => const NotificationsScreen(),
+            ),
           ]),
+
+          // PROFILE
           StatefulShellBranch(routes: [
             GoRoute(
-                path: '/profile',
-                name: 'profile',
-                builder: (_, __) => const ProfileScreen()),
+              path: '/profile',
+              builder: (_, __) => const ProfileScreen(),
+            ),
             GoRoute(
-                path: '/profile/my-campaigns',
-                name: 'myCampaigns',
-                builder: (_, __) => const MyCampaignsScreen()),
+              path: '/profile/my-campaigns',
+              builder: (_, __) => const MyCampaignsScreen(),
+            ),
             GoRoute(
-                path: '/profile/my-donations',
-                name: 'myDonations',
-                builder: (_, __) => const DonationsScreen()),
-            //GoRoute(path: '/campaigns/:id/withdraw',   name: 'withdrawal',  builder: (_, __) => const WithdrawalScreen(campaignId: '')),
+              path: '/profile/my-donations',
+              builder: (_, __) => const DonationsScreen(),
+            ),
             GoRoute(
               path: '/profile/withdrawal/:campaignId',
-              name: 'withdrawal',
               builder: (_, state) => WithdrawalScreen(
-                  campaignId: state.pathParameters['campaignId'] ?? ''),
+                campaignId: state.pathParameters['campaignId'] ?? '',
+              ),
             ),
             GoRoute(
               path: '/favorites',
-              name: 'favorites',
               builder: (_, __) => const FavoritesScreen(),
             ),
           ]),

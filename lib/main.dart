@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'core/network/auth_service.dart';
 import 'router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Read one-time boot flags before the provider is ready
-  final authState      = await AuthService.instance.getCurrentUser();
-  final showOnboarding = await _checkOnboarding(); // your existing flag logic
+
+  // Status bar styling
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFF16A34A),
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ),
+  );
+
+  final authState = await AuthService.instance.getCurrentUser();
+  final showOnboarding = await _checkOnboarding();
 
   runApp(
     ChangeNotifierProvider(
@@ -23,13 +35,17 @@ void main() async {
 class MyApp extends StatelessWidget {
   final bool showOnboarding;
   final bool isLoggedIn;
-  const MyApp({super.key, required this.showOnboarding, required this.isLoggedIn});
+
+  const MyApp({
+    super.key,
+    required this.showOnboarding,
+    required this.isLoggedIn,
+  });
 
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    // Router is rebuilt whenever authProvider notifies (login / logout)
     final router = createRouter(
       showOnboarding: showOnboarding,
       isLoggedIn: isLoggedIn,
@@ -39,12 +55,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'InuaFund',
       theme: ThemeData.dark(),
+      debugShowCheckedModeBanner: false,
       routerConfig: router,
     );
   }
 }
 
+// ✅ REAL onboarding check
 Future<bool> _checkOnboarding() async {
-  // your SharedPreferences / secure storage check here
-  return false;
+  final prefs = await SharedPreferences.getInstance();
+  return !(prefs.getBool('hasCompletedOnboarding') ?? false);
 }
